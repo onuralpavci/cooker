@@ -30,10 +30,10 @@ jobs:
             sleep 2
           done
 
-      - name: Pull DeepSeek R1 model
+      - name: Pull GPT-OSS model
         run: |
-          echo "Pulling deepseek-r1:1.5b model..."
-          docker exec ollama ollama pull deepseek-r1:1.5b
+          echo "Pulling gpt-oss:20b model (this may take a while ~12GB)..."
+          docker exec ollama ollama pull gpt-oss:20b
           echo "Model pulled successfully!"
           docker exec ollama ollama list
 
@@ -55,7 +55,7 @@ jobs:
         run: ./gradlew run
         env:
           OLLAMA_URL: http://localhost:11434
-          OLLAMA_MODEL: deepseek-r1:1.5b
+          OLLAMA_MODEL: gpt-oss:20b
           OLLAMA_TEMPERATURE: "0.7"
 
       - name: Stop Ollama Container
