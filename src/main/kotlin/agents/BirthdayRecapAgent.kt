@@ -14,37 +14,26 @@ import ai.koog.prompt.params.LLMParams
 import com.avci.OllamaConfig
 import com.avci.tools.CheckBirthday
 import com.avci.tools.FetchGitHubPRs
-import com.avci.tools.GetGitHubUsername
 
 object BirthdayRecapAgent {
 
+    // Simplified and explicit prompt for smaller models
     private val systemPrompt = """
-        You are a Birthday Celebration Assistant that creates personalized year-in-review recaps for developers.
+        You are a Birthday Recap Bot. Follow these steps EXACTLY:
         
-        Your workflow:
-        1. First, use the 'check_birthday' tool to check if anyone has a birthday today (no arguments needed)
-        2. If NO ONE has a birthday today: Politely inform and wish everyone a great day
-        3. If someone HAS a birthday today:
-           a. Use the 'get_github_username' tool to get their GitHub username (pass their name)
-           b. Use the 'fetch_github_prs' tool to get their recent merged Pull Requests (ALWAYS use limit=10)
-           c. Create a warm, celebratory recap paragraph for EACH birthday person
+        STEP 1: Call check_birthday tool (no arguments needed)
+        STEP 2: If someone has a birthday, the tool returns their GitHub username
+        STEP 3: Call fetch_github_prs with the EXACT username from step 1 (use limit=10)
+        STEP 4: Write a birthday recap based on the PR data
         
-        When creating the recap, highlight:
-        - Total number of PRs they've merged
-        - Types of contributions (bug fixes, new features, refactoring, documentation)
-        - Notable achievements or interesting PR titles
-        - Lines of code added/removed if available
-        - A motivating, celebratory closing message
+        IMPORTANT RULES:
+        - Use ONLY the GitHub usernames returned by check_birthday
+        - Do NOT invent or guess usernames
+        - Do NOT use names like "John Doe" or "Jane Smith"
         
-        Be enthusiastic, warm, and personal in your recap. Use emojis sparingly but effectively.
-        Write the recap in a conversational, friendly tone as if you're a colleague celebrating with them.
-        
-        Example recap style:
-        "🎂 Happy Birthday Onuralp! What an incredible year you've had! You merged X PRs, squashed bugs like a pro, 
-        and shipped amazing features like [feature name]. Your dedication to clean code shows - 
-        you even took time for refactoring! Here's to another year of great commits! 🚀"
-        
-        If there are multiple birthday people, create a recap for each one.
+        Recap format:
+        🎂 Happy Birthday [Name]! You merged [X] PRs including: [list PR titles]. 
+        Great work on [mention specific achievements]! 🚀
     """.trimIndent()
 
     fun create(config: OllamaConfig = OllamaConfig.default()): AIAgent<String, String> {
@@ -63,10 +52,10 @@ object BirthdayRecapAgent {
             baseUrl = config.baseUrl,
         )
 
+        // Simplified: only 2 tools needed now
         val toolRegistry = ToolRegistry {
             tool(SayToUser)
             tool(CheckBirthday)
-            tool(GetGitHubUsername)
             tool(FetchGitHubPRs)
         }
 
@@ -75,7 +64,7 @@ object BirthdayRecapAgent {
                 system(content = systemPrompt)
             },
             model = llm,
-            maxAgentIterations = 20 // More iterations for multiple birthday people
+            maxAgentIterations = 15
         )
 
         return AIAgent(
