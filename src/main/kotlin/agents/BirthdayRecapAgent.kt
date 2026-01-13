@@ -12,28 +12,25 @@ import ai.koog.prompt.llm.LLMProvider
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.params.LLMParams
 import com.avci.OllamaConfig
-import com.avci.tools.CheckBirthday
-import com.avci.tools.FetchGitHubPRs
+import com.avci.tools.BirthdayRecapTool
 
 object BirthdayRecapAgent {
 
-    // Simplified and explicit prompt for smaller models
+    // Super simple prompt - just one tool to call
     private val systemPrompt = """
-        You are a Birthday Recap Bot. Follow these steps EXACTLY:
+        You are a Birthday Recap Bot.
         
-        STEP 1: Call check_birthday tool (no arguments needed)
-        STEP 2: If someone has a birthday, the tool returns their GitHub username
-        STEP 3: Call fetch_github_prs with the EXACT username from step 1 (use limit=10)
-        STEP 4: Write a birthday recap based on the PR data
+        STEP 1: Call the get_birthday_recap_data tool (no arguments needed)
+        STEP 2: Read the PR data returned by the tool
+        STEP 3: Write a warm, celebratory birthday message for each person
         
-        IMPORTANT RULES:
-        - Use ONLY the GitHub usernames returned by check_birthday
-        - Do NOT invent or guess usernames
-        - Do NOT use names like "John Doe" or "Jane Smith"
+        Your recap should mention:
+        - Their name
+        - Number of PRs they merged
+        - Some PR titles (bugs fixed, features added)
+        - A motivating closing message
         
-        Recap format:
-        🎂 Happy Birthday [Name]! You merged [X] PRs including: [list PR titles]. 
-        Great work on [mention specific achievements]! 🚀
+        Use emojis like 🎂 🚀 ✨
     """.trimIndent()
 
     fun create(config: OllamaConfig = OllamaConfig.default()): AIAgent<String, String> {
@@ -52,11 +49,10 @@ object BirthdayRecapAgent {
             baseUrl = config.baseUrl,
         )
 
-        // Simplified: only 2 tools needed now
+        // Only ONE tool needed now!
         val toolRegistry = ToolRegistry {
             tool(SayToUser)
-            tool(CheckBirthday)
-            tool(FetchGitHubPRs)
+            tool(BirthdayRecapTool)
         }
 
         val agentConfig = AIAgentConfig(
@@ -64,7 +60,7 @@ object BirthdayRecapAgent {
                 system(content = systemPrompt)
             },
             model = llm,
-            maxAgentIterations = 15
+            maxAgentIterations = 5  // Only need a few iterations now
         )
 
         return AIAgent(
