@@ -28,7 +28,9 @@ data class OllamaConfig(
 }
 
 suspend fun runBirthdayRecapAgent() {
-    val config = OllamaConfig.default()
+    val config = OllamaConfig.fromEnv()
+    println("📡 Using Ollama: ${config.baseUrl} | Model: ${config.model}")
+    
     val agent = BirthdayRecapAgent.create(config)
 
     println("""
