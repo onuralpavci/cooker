@@ -3,7 +3,7 @@ name: Birthday PR Recap Agent
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 6 * * *'
+    - cron: '0 6 * * *'  # 9 AM Turkey time (UTC+3)
 
 jobs:
   run-agent:
