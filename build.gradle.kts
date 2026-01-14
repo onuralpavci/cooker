@@ -34,6 +34,27 @@ tasks.named<JavaExec>("run") {
     standardOutput = System.out
 }
 
+// Agent-specific run tasks
+tasks.register<JavaExec>("runBirthdayAgent") {
+    group = "application"
+    description = "Run the Birthday PR Recap Agent"
+    mainClass.set("com.avci.MainKt")
+    classpath = sourceSets.main.get().runtimeClasspath
+    args = listOf("birthday")
+    standardInput = System.`in`
+    standardOutput = System.out
+}
+
+tasks.register<JavaExec>("runUITestAnalyzer") {
+    group = "application"
+    description = "Run the UI Test Analyzer Agent"
+    mainClass.set("com.avci.MainKt")
+    args = listOf("uitest")
+    classpath = sourceSets.main.get().runtimeClasspath
+    standardInput = System.`in`
+    standardOutput = System.out
+}
+
 tasks.register<Jar>("fatJar") {
     archiveClassifier.set("all")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE

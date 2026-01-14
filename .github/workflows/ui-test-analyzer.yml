@@ -1,12 +1,12 @@
-name: Birthday PR Recap Agent
+name: UI Test Analyzer Agent
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 6 * * *'  # 9 AM Turkey time (UTC+3)
+    - cron: '0 7 * * *'  # 10 AM Turkey time (UTC+3) - after UI tests complete
 
 jobs:
-  run-agent:
+  analyze-tests:
     runs-on: ubuntu-latest
 
     steps:
@@ -30,9 +30,9 @@ jobs:
             sleep 2
           done
 
-      - name: Pull GPT-OSS model
+      - name: Pull LLM model
         run: |
-          echo "Pulling gpt-oss:20b model (this may take a while ~12GB)..."
+          echo "Pulling gpt-oss:20b model..."
           docker exec ollama ollama pull gpt-oss:20b
           echo "Model pulled successfully!"
           docker exec ollama ollama list
@@ -51,8 +51,8 @@ jobs:
           echo "${{ secrets.GH_PAT }}" | gh auth login --with-token
           gh auth status
 
-      - name: Run Birthday Recap Agent
-        run: ./gradlew runBirthdayAgent
+      - name: Run UI Test Analyzer Agent
+        run: ./gradlew runUITestAnalyzer
         env:
           OLLAMA_URL: http://localhost:11434
           OLLAMA_MODEL: gpt-oss:20b
@@ -61,3 +61,4 @@ jobs:
       - name: Stop Ollama Container
         if: always()
         run: docker stop ollama || true
+
