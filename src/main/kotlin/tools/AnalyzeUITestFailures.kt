@@ -21,15 +21,14 @@ import java.util.concurrent.TimeUnit
 object AnalyzeUITestFailures : SimpleTool<AnalyzeUITestFailures.Args>(
     argsSerializer = Args.serializer(),
     name = "analyze_ui_test_failures",
-    description = "Analyzes UI test failures from the last N GitHub Actions workflow runs. Returns a JSON report with failure patterns categorized as NEW (first time failure), BUG (consistent failure), or FLAKY (intermittent failure)."
+    description = "Analyzes UI test failures from the last N GitHub Actions workflow runs. Automatically discovers and downloads all maestro-test-summary-* artifacts. Returns a JSON report with failure patterns categorized as NEW (first time failure), BUG (consistent failure), or FLAKY (intermittent failure)."
 ) {
 
     @Serializable
     data class Args(
         val repo: String = "midas-engineering/mobile-android",
         val workflow: String = "Maestro UI Test",
-        val runCount: Int = 10,
-        val domains: List<String> = listOf("crypto", "trade", "onboarding")
+        val runCount: Int = 10
     )
 
     @Serializable
@@ -81,10 +80,7 @@ object AnalyzeUITestFailures : SimpleTool<AnalyzeUITestFailures.Args>(
                 // Step 2: Download and parse test summaries
                 println("   └─ Downloading test summaries...")
                 println("      📁 Temp dir: ${tempDir.absolutePath}")
-                
-                // Use default domains if empty (LLM might send empty list)
-                val domains = args.domains.ifEmpty { listOf("crypto", "trade", "onboarding") }
-                println("      🔍 Domains: $domains (args.domains was: ${args.domains})")
+                println("      🔍 Using wildcard pattern: maestro-test-summary-*")
                 
                 val testFailures = mutableMapOf<String, MutableList<Pair<Int, WorkflowRun>>>() // testName -> [(runIndex, run)]
                 val testDomains = mutableMapOf<String, String>() // testName -> domain
@@ -92,8 +88,10 @@ object AnalyzeUITestFailures : SimpleTool<AnalyzeUITestFailures.Args>(
                 var totalFailuresFound = 0
                 
                 runs.forEachIndexed { index, run ->
-                    for (domain in domains) {
-                        val failures = downloadAndParseTestSummary(args.repo, run.id, domain, tempDir)
+                    // Download all maestro-test-summary-* artifacts for this run
+                    val domainFailures = downloadAndParseAllTestSummaries(args.repo, run.id, tempDir)
+                    
+                    for ((domain, failures) in domainFailures) {
                         if (failures.isNotEmpty()) {
                             totalArtifactsDownloaded++
                             totalFailuresFound += failures.size
@@ -231,35 +229,49 @@ object AnalyzeUITestFailures : SimpleTool<AnalyzeUITestFailures.Args>(
         }
     }
     
-    private fun downloadAndParseTestSummary(repo: String, runId: String, domain: String, tempDir: File): List<String> {
-        val outputDir = File(tempDir, "$runId/$domain")
+    /**
+     * Downloads all maestro-test-summary-* artifacts for a given run and parses them.
+     * Returns a map of domain -> list of failed test names.
+     */
+    private fun downloadAndParseAllTestSummaries(repo: String, runId: String, tempDir: File): Map<String, List<String>> {
+        val outputDir = File(tempDir, runId)
         outputDir.mkdirs()
         
         val command = listOf(
             "gh", "run", "download", runId,
             "--repo", repo,
-            "--name", "maestro-test-summary-$domain",
+            "--pattern", "maestro-test-summary-*",
             "--dir", outputDir.absolutePath
         )
         
-        val result = runCommand(command, ignoreErrors = true)
+        runCommand(command, ignoreErrors = true)
         
-        // Check what files were downloaded
-        val files = outputDir.listFiles()
-        if (files.isNullOrEmpty()) {
-            // Artifact might not exist for this run/domain - this is normal for success runs
-            return emptyList()
+        // Find all maestro-test-summary-* directories
+        val domainFailures = mutableMapOf<String, List<String>>()
+        
+        val subdirs = outputDir.listFiles { file -> 
+            file.isDirectory && file.name.startsWith("maestro-test-summary-")
+        } ?: emptyArray()
+        
+        for (domainDir in subdirs) {
+            // Extract domain name: "maestro-test-summary-crypto" -> "crypto"
+            val domain = domainDir.name.removePrefix("maestro-test-summary-")
+            
+            // Find summary.txt file
+            val summaryFile = domainDir.listFiles()?.firstOrNull { it.name.endsWith(".txt") }
+            
+            if (summaryFile == null) {
+                // No summary file - artifact might be empty or success run
+                continue
+            }
+            
+            val failures = parseSummaryFile(summaryFile)
+            if (failures.isNotEmpty()) {
+                domainFailures[domain] = failures
+            }
         }
         
-        // Parse summary file
-        val summaryFile = files.firstOrNull { it.name.endsWith(".txt") }
-        if (summaryFile == null) {
-            println("      ⚠️ Run $runId/$domain: No .txt file found in ${files.map { it.name }}")
-            return emptyList()
-        }
-        
-        val failures = parseSummaryFile(summaryFile)
-        return failures
+        return domainFailures
     }
     
     private fun parseSummaryFile(file: File): List<String> {
