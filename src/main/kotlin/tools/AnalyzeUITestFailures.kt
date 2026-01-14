@@ -84,16 +84,18 @@ object AnalyzeUITestFailures : SimpleTool<AnalyzeUITestFailures.Args>(
                 
                 val testFailures = mutableMapOf<String, MutableList<Pair<Int, WorkflowRun>>>() // testName -> [(runIndex, run)]
                 val testDomains = mutableMapOf<String, String>() // testName -> domain
-                var totalArtifactsDownloaded = 0
+                var totalArtifactsProcessed = 0
+                var totalArtifactsWithFailures = 0
                 var totalFailuresFound = 0
                 
                 runs.forEachIndexed { index, run ->
                     // Download all maestro-test-summary-* artifacts for this run
-                    val domainFailures = downloadAndParseAllTestSummaries(args.repo, run.id, tempDir)
+                    val (domainFailures, artifactCount) = downloadAndParseAllTestSummaries(args.repo, run.id, tempDir)
+                    totalArtifactsProcessed += artifactCount
                     
                     for ((domain, failures) in domainFailures) {
                         if (failures.isNotEmpty()) {
-                            totalArtifactsDownloaded++
+                            totalArtifactsWithFailures++
                             totalFailuresFound += failures.size
                             println("      📥 Run ${run.id}/$domain: ${failures.size} failures")
                         }
@@ -104,7 +106,7 @@ object AnalyzeUITestFailures : SimpleTool<AnalyzeUITestFailures.Args>(
                     }
                 }
                 
-                println("      📊 Total: $totalArtifactsDownloaded artifacts with failures, $totalFailuresFound total failures")
+                println("      📊 Total: $totalArtifactsProcessed artifacts processed, $totalArtifactsWithFailures with failures, $totalFailuresFound total test failures")
                 
                 println("   └─ Found ${testFailures.size} unique failed tests")
                 
@@ -231,9 +233,9 @@ object AnalyzeUITestFailures : SimpleTool<AnalyzeUITestFailures.Args>(
     
     /**
      * Downloads all maestro-test-summary-* artifacts for a given run and parses them.
-     * Returns a map of domain -> list of failed test names.
+     * Returns a pair of (domain -> list of failed test names, artifact count).
      */
-    private fun downloadAndParseAllTestSummaries(repo: String, runId: String, tempDir: File): Map<String, List<String>> {
+    private fun downloadAndParseAllTestSummaries(repo: String, runId: String, tempDir: File): Pair<Map<String, List<String>>, Int> {
         val outputDir = File(tempDir, runId)
         outputDir.mkdirs()
         
@@ -253,6 +255,8 @@ object AnalyzeUITestFailures : SimpleTool<AnalyzeUITestFailures.Args>(
             file.isDirectory && file.name.startsWith("maestro-test-summary-")
         } ?: emptyArray()
         
+        val artifactCount = subdirs.size
+        
         for (domainDir in subdirs) {
             // Extract domain name: "maestro-test-summary-crypto" -> "crypto"
             val domain = domainDir.name.removePrefix("maestro-test-summary-")
@@ -271,7 +275,7 @@ object AnalyzeUITestFailures : SimpleTool<AnalyzeUITestFailures.Args>(
             }
         }
         
-        return domainFailures
+        return Pair(domainFailures, artifactCount)
     }
     
     private fun parseSummaryFile(file: File): List<String> {
