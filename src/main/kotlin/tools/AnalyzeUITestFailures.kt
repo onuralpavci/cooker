@@ -152,10 +152,16 @@ object AnalyzeUITestFailures : SimpleTool<AnalyzeUITestFailures.Args>(
                     failures = categorizedFailures
                 )
                 
+                // Log run breakdown for verification
+                val successCount = runs.count { it.conclusion == "success" }
+                val failureCount = runs.count { it.conclusion == "failure" }
+                println("      📊 Runs breakdown: $successCount success, $failureCount failure (total: ${runs.size})")
+                
                 val json = Json { prettyPrint = true }
                 val resultJson = json.encodeToString(AnalysisResult.serializer(), result)
                 
                 println("   └─ Analysis complete!")
+                println("      📄 JSON size: ${resultJson.length} chars, ${result.failures.size} failures categorized")
                 resultJson
                 
             } finally {
