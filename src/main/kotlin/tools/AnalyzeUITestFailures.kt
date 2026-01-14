@@ -81,7 +81,10 @@ object AnalyzeUITestFailures : SimpleTool<AnalyzeUITestFailures.Args>(
                 // Step 2: Download and parse test summaries
                 println("   └─ Downloading test summaries...")
                 println("      📁 Temp dir: ${tempDir.absolutePath}")
-                println("      🔍 Domains: ${args.domains}")
+                
+                // Use default domains if empty (LLM might send empty list)
+                val domains = args.domains.ifEmpty { listOf("crypto", "trade", "onboarding") }
+                println("      🔍 Domains: $domains (args.domains was: ${args.domains})")
                 
                 val testFailures = mutableMapOf<String, MutableList<Pair<Int, WorkflowRun>>>() // testName -> [(runIndex, run)]
                 val testDomains = mutableMapOf<String, String>() // testName -> domain
@@ -89,7 +92,7 @@ object AnalyzeUITestFailures : SimpleTool<AnalyzeUITestFailures.Args>(
                 var totalFailuresFound = 0
                 
                 runs.forEachIndexed { index, run ->
-                    for (domain in args.domains) {
+                    for (domain in domains) {
                         val failures = downloadAndParseTestSummary(args.repo, run.id, domain, tempDir)
                         if (failures.isNotEmpty()) {
                             totalArtifactsDownloaded++
