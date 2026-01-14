@@ -12,16 +12,21 @@ object GetGitHubUsername : SimpleTool<GetGitHubUsername.Args>(
     description = "Gets the GitHub username for a given person's name. Provide the person's full name to get their GitHub username."
 ) {
 
-    // Dummy mapping: name -> GitHub username
+    // Android Team mapping: name -> GitHub username
     private val usernameMap = mapOf(
-        "onuralp avcı" to "onuralp-avci_midas",
-        "ahmet yılmaz" to "ahmet-yilmaz",
-        "elif kaya" to "elif-kaya-dev",
-        "mehmet demir" to "mehmet-demir",
-        "zeynep çelik" to "zeynep-celik",
-        "can öztürk" to "can-ozturk",
-        "ayşe yıldız" to "ayse-yildiz",
-        "burak şahin" to "burak-sahin-dev",
+        "and anı çalık" to "and-ani-calik_midas",
+        "arda ofluoğlu" to "arda-ofluoglu_midas",
+        "aslan sarı" to "aslan-sari_midas",
+        "cemre ünal" to "cemre-unal_midas",
+        "doğukan baş" to "dogukan-bas_midas",
+        "eray özenç" to "eray-ozenc_midas",
+        "esra emirli" to "esra-emirli_midas",
+        "fatih arslan" to "fatih-arslan_midas",
+        "mehmet altıparmak" to "mehmet-altiparmak_midas",
+        "mehmet kaya" to "mehmet-kaya_midas",
+        "mustafa sevgi" to "mustafa-sevgi_midas",
+        "onur vatansever" to "onur-vatansever_midas",
+        "onuralp avcı" to "onuralp-avci_midas"
     )
 
     @Serializable

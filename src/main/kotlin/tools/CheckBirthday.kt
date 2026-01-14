@@ -16,16 +16,21 @@ object CheckBirthday : SimpleTool<CheckBirthday.Args>(
     description = "Checks if today is anyone's birthday from the team. Returns who has a birthday today. No arguments needed."
 ) {
 
-    // Dummy birthday list: name -> (month, day)
+    // Android Team birthday list: name -> (month, day)
     private val birthdayList = mapOf(
-        "Onuralp Avcı" to Pair(1, 13),      // January 13
-        "Ahmet Yılmaz" to Pair(3, 15),      // March 15
-        "Elif Kaya" to Pair(7, 22),         // July 22
-        "Mehmet Demir" to Pair(1, 13),      // January 13 (same as Onuralp for testing)
-        "Zeynep Çelik" to Pair(12, 25),     // December 25
-        "Can Öztürk" to Pair(5, 1),         // May 1
-        "Ayşe Yıldız" to Pair(9, 10),       // September 10
-        "Burak Şahin" to Pair(11, 30),      // November 30
+        "And Anı Çalık" to Pair(1, 14),         // January 14
+        "Arda Ofluoğlu" to Pair(1, 15),         // January 15
+        "Aslan Sarı" to Pair(1, 16),            // January 16
+        "Cemre Ünal" to Pair(1, 17),            // January 17
+        "Doğukan Baş" to Pair(1, 18),           // January 18
+        "Eray Özenç" to Pair(1, 19),            // January 19
+        "Esra Emirli" to Pair(1, 20),           // January 20
+        "Fatih Arslan" to Pair(1, 21),          // January 21
+        "Mehmet Altıparmak" to Pair(1, 22),     // January 22
+        "Mehmet Kaya" to Pair(1, 23),           // January 23
+        "Mustafa Sevgi" to Pair(1, 24),         // January 24
+        "Onur Vatansever" to Pair(1, 25),       // January 25
+        "Onuralp Avcı" to Pair(1, 26)           // January 26
     )
 
     @Serializable
