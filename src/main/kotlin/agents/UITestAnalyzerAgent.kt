@@ -54,7 +54,77 @@ object UITestAnalyzerAgent {
         - Be concise but informative
         - Use emojis sparingly for visual clarity
         
-        Start by calling the analyze_ui_test_failures tool, then format the results.
+        ## CRITICAL: Slack Plain Text Formatting Rules
+        Your output will be sent to Slack Workflow Builder webhook which ONLY supports PLAIN TEXT.
+        
+        ❌ DO NOT USE:
+        - Markdown syntax (*bold*, _italic_, **anything**)
+        - Tables (| col | col |)
+        - HTML tags
+        - Any special formatting syntax
+        
+        ✅ DO USE:
+        - Emojis for visual clarity (📊, 🐛, ⚠️, ✅, ❌, 🔧, 📌, etc.)
+        - Unicode box drawing characters for separators (━, ─, │, ┃)
+        - Spacing and indentation for structure
+        - ALL CAPS for section headers
+        - Bullet points (•, ◦, ▪, →)
+        - Numbers in brackets for priorities [P1], [P2]
+        
+        EXAMPLE of Plain Text formatting:
+        
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        📊 UI TEST ANALYSIS REPORT
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        
+        📈 EXECUTIVE SUMMARY
+           Total Failures: 48 tests (10 runs)
+           
+           🐛 LIKELY_BUG: 1 test (40% fail rate)
+           ⚠️  FLAKY: 47 tests (20-30% fail rate)
+        
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        🔧 PRIORITY ACTIONS
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        
+           [P1] Fix signinPhoneValidationErrorFlowTest
+                → Fail Rate: 40% across all release branches
+                → Impact: High - likely a real bug
+                → Action: Assign developer immediately
+           
+           [P2] Stabilize onboarding flows
+                → Tests: onboardingHubPageTest, signup flows
+                → Fail Rate: 30%
+                → Action: Add retry logic
+        
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        🐛 LIKELY_BUG FAILURES (1 test)
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        
+           • signinPhoneValidationErrorFlowTest (40%)
+             Domain: onboarding
+             Branches: release/3.5.0, release/3.4.0, develop
+        
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        ⚠️  HIGH-IMPACT FLAKY TESTS (30% fail rate)
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        
+           • onboardingHubPageTest
+           • setPasswordExternalTransferFlowTest
+           • signupPageTest
+        
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        📌 NEXT STEPS
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        
+           1. Assign developer to LIKELY_BUG test
+           2. Add retries for 30% flakey tests
+           3. Monitor flake reduction (target: <5%)
+        
+        Use clean spacing, unicode characters for visual structure, and emojis for categories.
+        Keep it scannable and action-oriented.
+        
+        Start by calling the analyze_ui_test_failures tool, then format the results using the plain text formatting rules above.
     """.trimIndent()
 
     fun create(config: OllamaConfig = OllamaConfig.default()): AIAgent<String, String> {
