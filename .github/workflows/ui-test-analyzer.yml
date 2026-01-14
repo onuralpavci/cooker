@@ -93,27 +93,15 @@ jobs:
           # Read agent response
           RESPONSE=$(cat agent_response.txt 2>/dev/null || echo "⚠️ Agent failed to generate response")
           
-          # Truncate if too long (Slack Workflow Builder has character limits)
-          if [ ${#RESPONSE} -gt 3000 ]; then
-            RESPONSE="${RESPONSE:0:3000}... (truncated - view full report in workflow run)"
-          fi
-          
           # Escape special characters for JSON
           RESPONSE_ESCAPED=$(echo "$RESPONSE" | jq -Rs .)
           
-          # Create summary
-          REPO="${{ inputs.target_repo || 'midas-engineering/mobile-android' }}"
-          WORKFLOW="${{ inputs.target_workflow || 'Maestro UI Test' }}"
-          RUN_LINK="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          
-          # Send to Slack (simple format for Slack Workflow Builder)
+          # Send to Slack (simple format: result + response)
           curl -X POST \
             -H "Content-Type: application/json" \
             -d "{
               \"result\": \"${{ steps.run-agent.outcome }}\",
-              \"description\": $RESPONSE_ESCAPED,
-              \"prUrl\": \"$RUN_LINK\",
-              \"prTitle\": \"UI Test Analyzer Report - $REPO\"
+              \"response\": $RESPONSE_ESCAPED
             }" \
             "$SLACK_WEBHOOK_URL" || echo "⚠️ Slack notification failed (webhook might not be configured)"
 
