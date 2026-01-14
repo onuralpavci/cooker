@@ -65,7 +65,18 @@ jobs:
           gh auth status
 
       - name: Run UI Test Analyzer Agent
-        run: ./gradlew runUITestAnalyzer
+        id: run-agent
+        run: |
+          # Run agent and capture output
+          ./gradlew runUITestAnalyzer | tee agent_output.txt
+          
+          # Extract just the agent response (after "Agent Response:" line)
+          sed -n '/📝 Agent Response:/,/BUILD SUCCESSFUL/p' agent_output.txt | \
+            sed '1d;$d' | \
+            sed 's/^==*$//' | \
+            sed '/^$/d' > agent_response.txt
+          
+          echo "Agent output saved to agent_response.txt"
         env:
           OLLAMA_URL: http://localhost:11434
           OLLAMA_MODEL: gpt-oss:20b
@@ -73,6 +84,75 @@ jobs:
           TARGET_REPO: ${{ inputs.target_repo || 'midas-engineering/mobile-android' }}
           TARGET_WORKFLOW: ${{ inputs.target_workflow || 'Maestro UI Test' }}
           RUN_COUNT: ${{ inputs.run_count || '10' }}
+
+      - name: Send Slack Notification
+        if: always() && steps.run-agent.outcome != 'skipped'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_UI_TEST_WEBHOOK_URL }}
+        run: |
+          # Read agent response
+          RESPONSE=$(cat agent_response.txt 2>/dev/null || echo "⚠️ Agent failed to generate response")
+          
+          # Truncate if too long (Slack has 4000 char limit per field)
+          if [ ${#RESPONSE} -gt 3900 ]; then
+            RESPONSE="${RESPONSE:0:3900}... (truncated)"
+          fi
+          
+          # Escape special characters for JSON
+          RESPONSE_ESCAPED=$(echo "$RESPONSE" | jq -Rs .)
+          
+          # Determine status emoji
+          if [[ "${{ steps.run-agent.outcome }}" == "success" ]]; then
+            STATUS_EMOJI="✅"
+          else
+            STATUS_EMOJI="❌"
+          fi
+          
+          # Send to Slack
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"text\": \"$STATUS_EMOJI UI Test Analyzer Report\",
+              \"blocks\": [
+                {
+                  \"type\": \"header\",
+                  \"text\": {
+                    \"type\": \"plain_text\",
+                    \"text\": \"$STATUS_EMOJI UI Test Analyzer Report\"
+                  }
+                },
+                {
+                  \"type\": \"section\",
+                  \"fields\": [
+                    {
+                      \"type\": \"mrkdwn\",
+                      \"text\": \"*Repository:*\\n${{ inputs.target_repo || 'midas-engineering/mobile-android' }}\"
+                    },
+                    {
+                      \"type\": \"mrkdwn\",
+                      \"text\": \"*Workflow:*\\n${{ inputs.target_workflow || 'Maestro UI Test' }}\"
+                    }
+                  ]
+                },
+                {
+                  \"type\": \"section\",
+                  \"text\": {
+                    \"type\": \"mrkdwn\",
+                    \"text\": $RESPONSE_ESCAPED
+                  }
+                },
+                {
+                  \"type\": \"context\",
+                  \"elements\": [
+                    {
+                      \"type\": \"mrkdwn\",
+                      \"text\": \"<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Workflow Run>\"
+                    }
+                  ]
+                }
+              ]
+            }" \
+            "$SLACK_WEBHOOK_URL" || echo "⚠️ Slack notification failed (webhook might not be configured)"
 
       - name: Stop Ollama Container
         if: always()
