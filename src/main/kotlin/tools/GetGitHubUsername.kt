@@ -14,7 +14,7 @@ object GetGitHubUsername : SimpleTool<GetGitHubUsername.Args>(
 
     // Android Team mapping: name -> GitHub username
     private val usernameMap = mapOf(
-        "and anı çalık" to "and-ani-calik_midas",
+        "and anı çalık" to "ani-calik_midas",
         "arda ofluoğlu" to "arda-ofluoglu_midas",
         "aslan sarı" to "aslan-sari_midas",
         "cemre ünal" to "cemre-unal_midas",
