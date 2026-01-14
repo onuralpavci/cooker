@@ -76,12 +76,19 @@ suspend fun runUITestAnalyzerAgent() {
     val config = OllamaConfig.fromEnv()
     println("📡 Using Ollama: ${config.baseUrl} | Model: ${config.model}")
     
+    // Config from environment variables (can be overridden in CI)
+    val targetRepo = System.getenv("TARGET_REPO") ?: "midas-engineering/mobile-android"
+    val targetWorkflow = System.getenv("TARGET_WORKFLOW") ?: "Maestro UI Test"
+    val runCount = System.getenv("RUN_COUNT")?.toIntOrNull() ?: 10
+    
+    println("📊 Target: $targetRepo | Workflow: $targetWorkflow | Last $runCount runs")
+    
     val agent = UITestAnalyzerAgent.create(config)
 
     println("""
         |
         |This agent will:
-        |1. Fetch the last 10 Maestro UI Test workflow runs
+        |1. Fetch the last $runCount workflow runs
         |2. Download and analyze test summaries
         |3. Identify failure patterns (NEW, BUG, FLAKY)
         |4. Generate a comprehensive report
@@ -90,7 +97,17 @@ suspend fun runUITestAnalyzerAgent() {
 
     println("🔄 Analyzing UI test failures...\n")
 
-    val result = agent.run("Analyze the recent UI test failures and categorize them.")
+    // Provide explicit parameters in user input so LLM knows exactly what to analyze
+    val userInput = """
+        Analyze the UI test failures for:
+        - Repository: $targetRepo
+        - Workflow: $targetWorkflow
+        - Number of runs to analyze: $runCount
+        
+        Use the analyze_ui_test_failures tool with these exact parameters.
+    """.trimIndent()
+    
+    val result = agent.run(userInput)
     
     println("\n" + "=".repeat(50))
     println("📝 Agent Response:")
