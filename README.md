@@ -111,6 +111,17 @@ Environment variables:
 
 **Note:** Domains are auto-discovered! No configuration needed for new test domains.
 
+### Slack Notifications (CI Only)
+
+GitHub Secret:
+- `SLACK_UI_TEST_WEBHOOK_URL` - Slack incoming webhook URL
+
+**Setup:**
+1. Go to https://api.slack.com/messaging/webhooks
+2. Create an Incoming Webhook for your Slack workspace
+3. Add the webhook URL to GitHub repo secrets as `SLACK_UI_TEST_WEBHOOK_URL`
+4. The workflow will automatically send analysis reports to Slack
+
 ## 🎯 Example Output
 
 ### Birthday PR Recap Agent
