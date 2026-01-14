@@ -96,11 +96,18 @@ jobs:
           # Escape special characters for JSON
           RESPONSE_ESCAPED=$(echo "$RESPONSE" | jq -Rs .)
           
+          # Map GitHub outcome to result status
+          if [[ "${{ steps.run-agent.outcome }}" == "success" ]]; then
+            RESULT="success"
+          else
+            RESULT="failed"
+          fi
+          
           # Send to Slack (simple format: result + response)
           curl -X POST \
             -H "Content-Type: application/json" \
             -d "{
-              \"result\": \"${{ steps.run-agent.outcome }}\",
+              \"result\": \"$RESULT\",
               \"response\": $RESPONSE_ESCAPED
             }" \
             "$SLACK_WEBHOOK_URL" || echo "⚠️ Slack notification failed (webhook might not be configured)"
