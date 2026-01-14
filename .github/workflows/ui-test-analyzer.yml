@@ -99,24 +99,25 @@ jobs:
           # Read agent response
           RESPONSE=$(cat agent_response.txt 2>/dev/null || echo "⚠️ Agent failed to generate response")
           
-          # Escape special characters for JSON
-          RESPONSE_ESCAPED=$(echo "$RESPONSE" | jq -Rs .)
+          # Extract JSON from response (agent outputs Block Kit JSON)
+          # Find the first '{' and extract everything from there
+          JSON_PAYLOAD=$(echo "$RESPONSE" | sed -n '/{/,/^}$/p' | jq -c .)
           
-          # Map GitHub outcome to result status
-          if [[ "${{ steps.run-agent.outcome }}" == "success" ]]; then
-            RESULT="success"
-          else
-            RESULT="failed"
+          if [ $? -ne 0 ] || [ -z "$JSON_PAYLOAD" ]; then
+            echo "❌ Failed to parse agent output as JSON"
+            echo "Agent output:"
+            echo "$RESPONSE"
+            # Fallback: Send error message in plain format
+            JSON_PAYLOAD="{\"text\":\"⚠️ Agent failed to generate valid Block Kit JSON. Check workflow logs.\"}"
           fi
           
-          # Send to Slack (simple format: result + response)
-          echo "📤 Sending notification to Slack..."
+          # Send Block Kit JSON directly to Slack
+          echo "📤 Sending Block Kit notification to Slack..."
+          echo "Payload preview: $(echo "$JSON_PAYLOAD" | jq -r '.text')"
+          
           curl -X POST \
             -H "Content-Type: application/json" \
-            -d "{
-              \"result\": \"$RESULT\",
-              \"response\": $RESPONSE_ESCAPED
-            }" \
+            -d "$JSON_PAYLOAD" \
             "$SLACK_WEBHOOK_URL"
           
           if [ $? -eq 0 ]; then
