@@ -172,13 +172,33 @@ object AnalyzeUITestFailures : SimpleTool<AnalyzeUITestFailures.Args>(
             "--json", "databaseId,createdAt,headBranch,conclusion"
         )
         
-        val output = runCommand(command) ?: return emptyList()
+        println("      📋 Command: ${command.joinToString(" ")}")
+        
+        val output = runCommand(command)
+        
+        if (output == null) {
+            println("      ❌ Command returned null (failed or timed out)")
+            return emptyList()
+        }
+        
+        if (output.isBlank()) {
+            println("      ⚠️ Command returned empty output")
+            return emptyList()
+        }
+        
+        // Check for error messages in output
+        if (output.contains("error") || output.contains("Error") || output.contains("not found")) {
+            println("      ❌ Command error: $output")
+            return emptyList()
+        }
+        
+        println("      📄 Raw output (first 200 chars): ${output.take(200)}")
         
         return try {
             val json = Json { ignoreUnknownKeys = true }
             val jsonArray = json.parseToJsonElement(output).jsonArray
             
-            jsonArray.map { element ->
+            val runs = jsonArray.map { element ->
                 val obj = element.jsonObject
                 WorkflowRun(
                     id = obj["databaseId"]?.jsonPrimitive?.content ?: "",
@@ -187,8 +207,11 @@ object AnalyzeUITestFailures : SimpleTool<AnalyzeUITestFailures.Args>(
                     conclusion = obj["conclusion"]?.jsonPrimitive?.content ?: ""
                 )
             }
+            println("      ✅ Parsed ${runs.size} workflow runs")
+            runs
         } catch (e: Exception) {
             println("      ⚠️ Error parsing workflow runs: ${e.message}")
+            println("      📄 Full output: $output")
             emptyList()
         }
     }
@@ -259,17 +282,22 @@ object AnalyzeUITestFailures : SimpleTool<AnalyzeUITestFailures.Args>(
             
             if (!finished) {
                 process.destroyForcibly()
+                println("      ⏱️ Command timed out after 60 seconds")
                 return null
             }
             
-            if (process.exitValue() != 0 && !ignoreErrors) {
+            val exitCode = process.exitValue()
+            if (exitCode != 0 && !ignoreErrors) {
+                println("      ❌ Command exit code: $exitCode")
+                println("      📄 Output: ${output.toString().trim()}")
                 return null
             }
             
             output.toString().trim()
         } catch (e: Exception) {
+            println("      ⚠️ Command exception: ${e.javaClass.simpleName}: ${e.message}")
             if (!ignoreErrors) {
-                println("      ⚠️ Command failed: ${command.joinToString(" ")}: ${e.message}")
+                e.printStackTrace()
             }
             null
         }
