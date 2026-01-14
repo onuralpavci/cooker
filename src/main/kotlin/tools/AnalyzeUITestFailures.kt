@@ -42,10 +42,9 @@ object AnalyzeUITestFailures : SimpleTool<AnalyzeUITestFailures.Args>(
     @Serializable
     data class TestFailure(
         val testName: String,
-        val domain: String,
         val tag: String,
-        val failRate: String,  // e.g., "40%" - more compact than failCount/totalRuns
-        val branches: String   // Comma-separated, compact
+        val failRate: String  // e.g., "40%"
+        // Removed 'domain' and 'branches' - not needed for minimal report format
     )
 
     @Serializable
@@ -81,7 +80,6 @@ object AnalyzeUITestFailures : SimpleTool<AnalyzeUITestFailures.Args>(
                 println("      🔍 Using wildcard pattern: maestro-test-summary-*")
                 
                 val testFailures = mutableMapOf<String, MutableList<Pair<Int, WorkflowRun>>>() // testName -> [(runIndex, run)]
-                val testDomains = mutableMapOf<String, String>() // testName -> domain
                 var totalArtifactsProcessed = 0
                 var totalArtifactsWithFailures = 0
                 var totalFailuresFound = 0
@@ -99,7 +97,6 @@ object AnalyzeUITestFailures : SimpleTool<AnalyzeUITestFailures.Args>(
                         }
                         for (testName in failures) {
                             testFailures.getOrPut(testName) { mutableListOf() }.add(index to run)
-                            testDomains[testName] = domain
                         }
                     }
                 }
@@ -112,7 +109,6 @@ object AnalyzeUITestFailures : SimpleTool<AnalyzeUITestFailures.Args>(
                 val categorizedFailures = testFailures.map { (testName, failureList) ->
                     val failIndices = failureList.map { it.first }.toSet()
                     val failCount = failIndices.size
-                    val branches = failureList.map { it.second.headBranch }.distinct()
                     
                     val tag = when {
                         failIndices == setOf(0) -> "NEW" // Only failed in latest run
@@ -125,10 +121,8 @@ object AnalyzeUITestFailures : SimpleTool<AnalyzeUITestFailures.Args>(
                     
                     TestFailure(
                         testName = testName,
-                        domain = testDomains[testName] ?: "unknown",
                         tag = tag,
-                        failRate = failRate,
-                        branches = branches.joinToString(", ")
+                        failRate = failRate
                     )
                 }.sortedWith(compareBy({ tagPriority(it.tag) }, { -(it.failRate.removeSuffix("%").toIntOrNull() ?: 0) }, { it.testName }))
                 
