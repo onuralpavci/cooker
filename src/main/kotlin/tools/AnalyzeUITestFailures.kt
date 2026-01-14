@@ -31,8 +31,8 @@ object AnalyzeUITestFailures : SimpleTool<AnalyzeUITestFailures.Args>(
         val runCount: Int = 10
     )
 
-    @Serializable
-    data class WorkflowRun(
+    // Internal data class for workflow runs (not serialized to JSON)
+    private data class WorkflowRun(
         val id: String,
         val createdAt: String,
         val headBranch: String,
@@ -44,10 +44,8 @@ object AnalyzeUITestFailures : SimpleTool<AnalyzeUITestFailures.Args>(
         val testName: String,
         val domain: String,
         val tag: String,
-        val failCount: Int,
-        val totalRuns: Int,
-        val failedInRuns: List<String>,
-        val branches: List<String>
+        val failRate: String,  // e.g., "40%" - more compact than failCount/totalRuns
+        val branches: String   // Comma-separated, compact
     )
 
     @Serializable
@@ -55,8 +53,8 @@ object AnalyzeUITestFailures : SimpleTool<AnalyzeUITestFailures.Args>(
         val analysisDate: String,
         val runsAnalyzed: Int,
         val summary: Map<String, Int>,
-        val runs: List<WorkflowRun>,
         val failures: List<TestFailure>
+        // Removed 'runs' - LLM doesn't need full run details, just the count
     )
 
     override suspend fun execute(args: Args): String {
@@ -115,7 +113,6 @@ object AnalyzeUITestFailures : SimpleTool<AnalyzeUITestFailures.Args>(
                     val failIndices = failureList.map { it.first }.toSet()
                     val failCount = failIndices.size
                     val branches = failureList.map { it.second.headBranch }.distinct()
-                    val failedRunIds = failureList.map { it.second.id }.distinct()
                     
                     val tag = when {
                         failIndices == setOf(0) -> "NEW" // Only failed in latest run
@@ -124,16 +121,16 @@ object AnalyzeUITestFailures : SimpleTool<AnalyzeUITestFailures.Args>(
                         else -> "FLAKY" // Intermittent failures
                     }
                     
+                    val failRate = "${(failCount * 100) / runs.size}%"
+                    
                     TestFailure(
                         testName = testName,
                         domain = testDomains[testName] ?: "unknown",
                         tag = tag,
-                        failCount = failCount,
-                        totalRuns = runs.size,
-                        failedInRuns = failedRunIds,
-                        branches = branches
+                        failRate = failRate,
+                        branches = branches.joinToString(", ")
                     )
-                }.sortedWith(compareBy({ tagPriority(it.tag) }, { -it.failCount }, { it.testName }))
+                }.sortedWith(compareBy({ tagPriority(it.tag) }, { -(it.failRate.removeSuffix("%").toIntOrNull() ?: 0) }, { it.testName }))
                 
                 // Step 4: Create summary
                 val summary = mapOf(
@@ -143,12 +140,11 @@ object AnalyzeUITestFailures : SimpleTool<AnalyzeUITestFailures.Args>(
                     "FLAKY" to categorizedFailures.count { it.tag == "FLAKY" }
                 )
                 
-                // Step 5: Build result
+                // Step 5: Build result (minimal for LLM efficiency)
                 val result = AnalysisResult(
                     analysisDate = java.time.LocalDate.now().toString(),
                     runsAnalyzed = runs.size,
                     summary = summary,
-                    runs = runs,
                     failures = categorizedFailures
                 )
                 
