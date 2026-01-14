@@ -13,6 +13,7 @@ import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.params.LLMParams
 import com.avci.OllamaConfig
 import com.avci.tools.AnalyzeUITestFailures
+import com.avci.tools.SendSlackNotification
 
 /**
  * AI Agent that analyzes UI test failures from GitHub Actions workflows.
@@ -136,13 +137,20 @@ object UITestAnalyzerAgent {
         }
         ```
         
-        REMEMBER:
-        - Output ONLY valid JSON, nothing else
-        - No markdown code blocks around the JSON
-        - No explanations before or after
-        - Just pure JSON
+        ## YOUR WORKFLOW:
         
-        Start by calling the analyze_ui_test_failures tool, then generate the Block Kit JSON.
+        1. Call `analyze_ui_test_failures` tool to get test data
+        2. Generate Block Kit JSON based on the data
+        3. Call `send_slack_notification` tool with the JSON
+        4. Report success/failure to the user
+        
+        REMEMBER:
+        - The Block Kit JSON you generate will be sent to Slack
+        - Make sure it's valid JSON
+        - After generating the JSON, immediately call send_slack_notification
+        - Don't output the JSON to the user, send it to Slack
+        
+        Start now by calling the analyze_ui_test_failures tool.
     """.trimIndent()
 
     fun create(config: OllamaConfig = OllamaConfig.default()): AIAgent<String, String> {
@@ -164,6 +172,7 @@ object UITestAnalyzerAgent {
         val toolRegistry = ToolRegistry {
             tool(SayToUser)
             tool(AnalyzeUITestFailures)
+            tool(SendSlackNotification)
         }
 
         val agentConfig = AIAgentConfig(
