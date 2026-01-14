@@ -80,18 +80,30 @@ object AnalyzeUITestFailures : SimpleTool<AnalyzeUITestFailures.Args>(
                 
                 // Step 2: Download and parse test summaries
                 println("   └─ Downloading test summaries...")
+                println("      📁 Temp dir: ${tempDir.absolutePath}")
+                println("      🔍 Domains: ${args.domains}")
+                
                 val testFailures = mutableMapOf<String, MutableList<Pair<Int, WorkflowRun>>>() // testName -> [(runIndex, run)]
                 val testDomains = mutableMapOf<String, String>() // testName -> domain
+                var totalArtifactsDownloaded = 0
+                var totalFailuresFound = 0
                 
                 runs.forEachIndexed { index, run ->
                     for (domain in args.domains) {
                         val failures = downloadAndParseTestSummary(args.repo, run.id, domain, tempDir)
+                        if (failures.isNotEmpty()) {
+                            totalArtifactsDownloaded++
+                            totalFailuresFound += failures.size
+                            println("      📥 Run ${run.id}/$domain: ${failures.size} failures")
+                        }
                         for (testName in failures) {
                             testFailures.getOrPut(testName) { mutableListOf() }.add(index to run)
                             testDomains[testName] = domain
                         }
                     }
                 }
+                
+                println("      📊 Total: $totalArtifactsDownloaded artifacts with failures, $totalFailuresFound total failures")
                 
                 println("   └─ Found ${testFailures.size} unique failed tests")
                 
@@ -227,13 +239,24 @@ object AnalyzeUITestFailures : SimpleTool<AnalyzeUITestFailures.Args>(
             "--dir", outputDir.absolutePath
         )
         
-        runCommand(command, ignoreErrors = true)
+        val result = runCommand(command, ignoreErrors = true)
+        
+        // Check what files were downloaded
+        val files = outputDir.listFiles()
+        if (files.isNullOrEmpty()) {
+            // Artifact might not exist for this run/domain - this is normal for success runs
+            return emptyList()
+        }
         
         // Parse summary file
-        val summaryFile = outputDir.listFiles()?.firstOrNull { it.name.endsWith(".txt") }
-            ?: return emptyList()
+        val summaryFile = files.firstOrNull { it.name.endsWith(".txt") }
+        if (summaryFile == null) {
+            println("      ⚠️ Run $runId/$domain: No .txt file found in ${files.map { it.name }}")
+            return emptyList()
+        }
         
-        return parseSummaryFile(summaryFile)
+        val failures = parseSummaryFile(summaryFile)
+        return failures
     }
     
     private fun parseSummaryFile(file: File): List<String> {
