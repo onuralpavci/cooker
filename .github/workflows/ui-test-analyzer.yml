@@ -90,6 +90,12 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_UI_TEST_WEBHOOK_URL }}
         run: |
+          # Check if webhook URL is configured
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "⚠️ SLACK_UI_TEST_WEBHOOK_URL secret not configured - skipping Slack notification"
+            exit 0
+          fi
+          
           # Read agent response
           RESPONSE=$(cat agent_response.txt 2>/dev/null || echo "⚠️ Agent failed to generate response")
           
@@ -104,13 +110,21 @@ jobs:
           fi
           
           # Send to Slack (simple format: result + response)
+          echo "📤 Sending notification to Slack..."
           curl -X POST \
             -H "Content-Type: application/json" \
             -d "{
               \"result\": \"$RESULT\",
               \"response\": $RESPONSE_ESCAPED
             }" \
-            "$SLACK_WEBHOOK_URL" || echo "⚠️ Slack notification failed (webhook might not be configured)"
+            "$SLACK_WEBHOOK_URL"
+          
+          if [ $? -eq 0 ]; then
+            echo "✅ Slack notification sent successfully"
+          else
+            echo "❌ Failed to send Slack notification"
+            exit 1
+          fi
 
       - name: Stop Ollama Container
         if: always()
