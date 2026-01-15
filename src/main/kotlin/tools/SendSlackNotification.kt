@@ -2,6 +2,8 @@ package com.avci.tools
 
 import ai.koog.agents.core.tools.SimpleTool
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.OutputStream
@@ -14,12 +16,13 @@ import java.net.URL
 object SendSlackNotification : SimpleTool<SendSlackNotification.Args>(
     argsSerializer = Args.serializer(),
     name = "send_slack_notification",
-    description = "Sends a Slack notification with Block Kit format. Provide the complete Block Kit JSON payload as a string."
+    description = "Sends a Slack notification. Provide 'text' (fallback text) and 'blocks' (array of Slack Block Kit blocks)."
 ) {
 
     @Serializable
     data class Args(
-        val blockKitJson: String
+        val text: String,
+        val blocks: JsonArray
     )
 
     override suspend fun execute(args: Args): String {
@@ -33,26 +36,25 @@ object SendSlackNotification : SimpleTool<SendSlackNotification.Args>(
             return error
         }
         
-        if (args.blockKitJson.isBlank()) {
-            val error = "Error: blockKitJson is required"
-            println("   └─ $error")
-            return error
+        // Build the Slack payload from structured args
+        val payload = buildMap<String, JsonElement> {
+            put("text", kotlinx.serialization.json.JsonPrimitive(args.text))
+            put("blocks", args.blocks)
         }
+        val jsonPayload = json.encodeToString(payload)
         
         return try {
-            println("   └─ Webhook URL: ${webhookUrl.take(50)}...")
-            println("   └─ JSON payload size: ${args.blockKitJson.length} chars")
             
             val url = URL(webhookUrl)
             val connection = url.openConnection() as HttpURLConnection
             
             connection.requestMethod = "POST"
-            connection.setRequestProperty("Content-Type", "application/json")
+            connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
             connection.doOutput = true
             
             // Write JSON payload
             val outputStream: OutputStream = connection.outputStream
-            outputStream.write(args.blockKitJson.toByteArray(Charsets.UTF_8))
+            outputStream.write(jsonPayload.toByteArray(Charsets.UTF_8))
             outputStream.flush()
             outputStream.close()
             
@@ -66,14 +68,11 @@ object SendSlackNotification : SimpleTool<SendSlackNotification.Args>(
             
             val response = BufferedReader(InputStreamReader(inputStream)).use { it.readText() }
             
-            val result = if (responseCode in 200..299) {
-                "✅ Slack notification sent successfully! Response: $response"
+            if (responseCode in 200..299) {
+                "✅ Slack notification sent successfully!"
             } else {
                 "❌ Failed to send Slack notification. HTTP $responseCode: $response"
             }
-            
-            println("   └─ Result: $result")
-            result
             
         } catch (e: Exception) {
             val error = "Error sending Slack notification: ${e.message}"
