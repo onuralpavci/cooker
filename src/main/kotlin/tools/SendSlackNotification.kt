@@ -68,11 +68,14 @@ object SendSlackNotification : SimpleTool<SendSlackNotification.Args>(
             
             val response = BufferedReader(InputStreamReader(inputStream)).use { it.readText() }
             
-            if (responseCode in 200..299) {
+            val result = if (responseCode in 200..299) {
                 "✅ Slack notification sent successfully!"
             } else {
                 "❌ Failed to send Slack notification. HTTP $responseCode: $response"
             }
+            
+            println("   └─ Result: $result")
+            result
             
         } catch (e: Exception) {
             val error = "Error sending Slack notification: ${e.message}"
