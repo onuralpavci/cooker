@@ -85,7 +85,7 @@ sealed class LLMProviderConfig {
                 id = model,
                 capabilities = listOf(
                     LLMCapability.Temperature,
-                    LLMCapability.Schema.JSON.Full,
+                    LLMCapability.Schema.JSON.Basic,
                     LLMCapability.Tools
                 ),
                 contextLength = contextLength
