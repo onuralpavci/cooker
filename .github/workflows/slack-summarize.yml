@@ -24,7 +24,7 @@ env:
 jobs:
   summarize:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     
     steps:
       - name: 📥 Checkout
@@ -40,6 +40,27 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
         with:
           cache-read-only: false
+      
+      - name: 🦙 Start Ollama
+        run: |
+          echo "🚀 Starting Ollama server..."
+          docker run -d --name ollama -p 11434:11434 ollama/ollama
+          
+          # Wait for Ollama to be ready
+          echo "⏳ Waiting for Ollama to start..."
+          for i in {1..30}; do
+            if curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
+              echo "✅ Ollama is ready!"
+              break
+            fi
+            echo "   Attempt $i/30..."
+            sleep 2
+          done
+          
+          # Pull the model
+          echo "📥 Pulling model: ${{ secrets.OLLAMA_MODEL || 'llama3.2' }}"
+          docker exec ollama ollama pull ${{ secrets.OLLAMA_MODEL || 'llama3.2' }}
+          echo "✅ Model ready!"
       
       - name: 📋 Set Parameters
         id: params
@@ -59,15 +80,16 @@ jobs:
           echo "📊 Channel ID: ${{ steps.params.outputs.channel_id }}"
           echo "📊 Message Count: ${{ steps.params.outputs.message_count }}"
           echo "📊 Slack Bot Token: ${{ secrets.SLACK_BOT_TOKEN != '' && '✅ Set' || '❌ Not set' }}"
-          echo "📊 Ollama URL: ${{ secrets.OLLAMA_URL != '' && '✅ Set' || '❌ Not set' }}"
+          echo "📊 Ollama Model: ${{ secrets.OLLAMA_MODEL || 'llama3.2' }}"
+          echo "📊 Ollama URL: http://localhost:11434 (Docker)"
       
       - name: 📝 Run Slack Summarize Agent
         env:
           # Slack Configuration
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           
-          # LLM Configuration (Remote Ollama or other)
-          OLLAMA_URL: ${{ secrets.OLLAMA_URL || 'http://localhost:11434' }}
+          # LLM Configuration (Ollama running in Docker)
+          OLLAMA_URL: 'http://localhost:11434'
           OLLAMA_MODEL: ${{ secrets.OLLAMA_MODEL || 'llama3.2' }}
           OLLAMA_TEMPERATURE: '0.7'
         run: |
@@ -91,3 +113,9 @@ jobs:
               -d "{\"channel\":\"${{ steps.params.outputs.channel_id }}\",\"text\":\"❌ Özet oluşturulamadı. GitHub Actions loglarını kontrol edin.\"}" \
               "https://slack.com/api/chat.postMessage"
           fi
+      
+      - name: 🧹 Cleanup Ollama
+        if: always()
+        run: |
+          docker stop ollama || true
+          docker rm ollama || true
