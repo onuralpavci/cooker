@@ -51,10 +51,13 @@ jobs:
           echo "📊 Available RAM for processes:"
           cat /proc/meminfo | grep -E "MemTotal|MemFree|MemAvailable"
       
-      - name: 🦙 Start Ollama
+      - name: 🦙 Install & Start Ollama
         run: |
+          echo "📥 Installing Ollama..."
+          curl -fsSL https://ollama.com/install.sh | sh
+          
           echo "🚀 Starting Ollama server..."
-          docker run -d -p 11434:11434 --name ollama alpine/ollama
+          ollama serve &
           
           # Wait for Ollama to be ready
           echo "⏳ Waiting for Ollama to start..."
@@ -70,9 +73,9 @@ jobs:
           # Pull the model
           MODEL="${{ vars.OLLAMA_MODEL || 'gpt-oss:20b' }}"
           echo "📥 Pulling model: $MODEL"
-          docker exec ollama ollama pull $MODEL
+          ollama pull $MODEL
           echo "✅ Model ready!"
-          docker exec ollama ollama list
+          ollama list
       
       - name: 📋 Set Parameters
         id: params
@@ -129,5 +132,4 @@ jobs:
       - name: 🧹 Cleanup Ollama
         if: always()
         run: |
-          docker stop ollama || true
-          docker rm ollama || true
+          pkill ollama || true
