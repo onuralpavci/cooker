@@ -1,10 +1,12 @@
-package com.avci.tools
+package com.avci.tools.github
 
 import ai.koog.agents.core.tools.SimpleTool
 import kotlinx.serialization.Serializable
 
 /**
  * Tool that maps a person's name to their GitHub username.
+ * 
+ * TODO: In the future, this could be fetched from a config file or API.
  */
 object GetGitHubUsername : SimpleTool<GetGitHubUsername.Args>(
     argsSerializer = Args.serializer(),
@@ -13,6 +15,7 @@ object GetGitHubUsername : SimpleTool<GetGitHubUsername.Args>(
 ) {
 
     // Android Team mapping: name -> GitHub username
+    // TODO: Move this to a config file
     private val usernameMap = mapOf(
         "and anı çalık" to "ani-calik_midas",
         "arda ofluoğlu" to "arda-ofluoglu_midas",
@@ -35,12 +38,10 @@ object GetGitHubUsername : SimpleTool<GetGitHubUsername.Args>(
     )
 
     override suspend fun execute(args: Args): String {
-        println("🔧 [TOOL CALL] get_github_username(name=\"${args.name}\")")
+        println("🔧 [TOOL] get_github_username(name=\"${args.name}\")")
         
         if (args.name.isBlank()) {
-            val result = "Error: name is required. Please provide a person's name to get their GitHub username."
-            println("   └─ Result: $result")
-            return result
+            return logAndReturn("❌ Error: name is required")
         }
         
         val normalizedName = args.name.lowercase().trim()
@@ -50,13 +51,16 @@ object GetGitHubUsername : SimpleTool<GetGitHubUsername.Args>(
                 key.contains(normalizedName) || normalizedName.contains(key)
             }?.value
 
-        val result = if (username != null) {
-            "GitHub username for '${args.name}' is: $username"
+        return if (username != null) {
+            logAndReturn("✅ GitHub username for '${args.name}': $username")
         } else {
-            "Could not find GitHub username for '${args.name}'. Available team members: ${usernameMap.keys.joinToString(", ")}"
+            logAndReturn("❌ Not found. Available: ${usernameMap.keys.joinToString(", ")}")
         }
-        
-        println("   └─ Result: $result")
-        return result
+    }
+    
+    private fun logAndReturn(message: String): String {
+        println("   └─ $message")
+        return message
     }
 }
+

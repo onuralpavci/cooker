@@ -1,0 +1,93 @@
+name: Slack Summarize
+
+on:
+  # Manual trigger from GitHub UI
+  workflow_dispatch:
+    inputs:
+      channel_id:
+        description: 'Slack Channel ID (e.g., C0AD1763YAC)'
+        required: true
+        type: string
+      message_count:
+        description: 'Number of messages to summarize'
+        required: false
+        default: '100'
+        type: string
+
+  # Trigger from external sources (Lambda, API, etc.)
+  repository_dispatch:
+    types: [slack_summarize]
+
+env:
+  JAVA_VERSION: '21'
+
+jobs:
+  summarize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+      
+      - name: ☕ Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+      
+      - name: 🐘 Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-read-only: false
+      
+      - name: 📋 Set Parameters
+        id: params
+        run: |
+          # Handle both workflow_dispatch and repository_dispatch
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "channel_id=${{ github.event.inputs.channel_id }}" >> $GITHUB_OUTPUT
+            echo "message_count=${{ github.event.inputs.message_count }}" >> $GITHUB_OUTPUT
+          else
+            # repository_dispatch - get from client_payload
+            echo "channel_id=${{ github.event.client_payload.channel_id }}" >> $GITHUB_OUTPUT
+            echo "message_count=${{ github.event.client_payload.count || '100' }}" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: 🔍 Debug Parameters
+        run: |
+          echo "📊 Channel ID: ${{ steps.params.outputs.channel_id }}"
+          echo "📊 Message Count: ${{ steps.params.outputs.message_count }}"
+          echo "📊 Slack Bot Token: ${{ secrets.SLACK_BOT_TOKEN != '' && '✅ Set' || '❌ Not set' }}"
+          echo "📊 Ollama URL: ${{ secrets.OLLAMA_URL != '' && '✅ Set' || '❌ Not set' }}"
+      
+      - name: 📝 Run Slack Summarize Agent
+        env:
+          # Slack Configuration
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          
+          # LLM Configuration (Remote Ollama or other)
+          OLLAMA_URL: ${{ secrets.OLLAMA_URL || 'http://localhost:11434' }}
+          OLLAMA_MODEL: ${{ secrets.OLLAMA_MODEL || 'llama3.2' }}
+          OLLAMA_TEMPERATURE: '0.7'
+        run: |
+          echo "🚀 Starting Slack Summarize Agent..."
+          echo "   Channel: ${{ steps.params.outputs.channel_id }}"
+          echo "   Messages: ${{ steps.params.outputs.message_count }}"
+          
+          ./gradlew run \
+            --args="slack-summarize ${{ steps.params.outputs.channel_id }} ${{ steps.params.outputs.message_count }}" \
+            --no-daemon
+      
+      - name: 📤 Notify on Failure
+        if: failure()
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        run: |
+          if [ -n "$SLACK_BOT_TOKEN" ]; then
+            curl -X POST \
+              -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{\"channel\":\"${{ steps.params.outputs.channel_id }}\",\"text\":\"❌ Özet oluşturulamadı. GitHub Actions loglarını kontrol edin.\"}" \
+              "https://slack.com/api/chat.postMessage"
+          fi

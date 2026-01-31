@@ -13,8 +13,18 @@ repositories {
 
 dependencies {
     testImplementation(kotlin("test"))
+    
+    // Logging
     implementation("org.apache.logging.log4j:log4j-slf4j2-impl:2.22.0")
+    
+    // AI Agents Framework
     implementation("ai.koog:koog-agents:0.6.0")
+    
+    // Date/Time utilities
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
+    
+    // JSON serialization (already included in koog-agents, but explicit for tools)
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.0")
 }
 
 kotlin {
@@ -23,6 +33,12 @@ kotlin {
 
 application {
     mainClass.set("com.avci.MainKt")
+}
+
+// Pass all command line args to the application
+tasks.withType<JavaExec> {
+    standardInput = System.`in`
+    standardOutput = System.out
 }
 
 tasks.test {
@@ -34,25 +50,46 @@ tasks.named<JavaExec>("run") {
     standardOutput = System.out
 }
 
-// Agent-specific run tasks
+// Agent Tasks
 tasks.register<JavaExec>("runBirthdayAgent") {
-    group = "application"
+    group = "agents"
     description = "Run the Birthday PR Recap Agent"
     mainClass.set("com.avci.MainKt")
     classpath = sourceSets.main.get().runtimeClasspath
     args = listOf("birthday")
-    standardInput = System.`in`
-    standardOutput = System.out
 }
 
 tasks.register<JavaExec>("runUITestAnalyzer") {
-    group = "application"
+    group = "agents"
     description = "Run the UI Test Analyzer Agent"
     mainClass.set("com.avci.MainKt")
-    args = listOf("uitest")
     classpath = sourceSets.main.get().runtimeClasspath
-    standardInput = System.`in`
-    standardOutput = System.out
+    args = listOf("uitest")
+}
+
+tasks.register<JavaExec>("runSlackSummarizer") {
+    group = "agents"
+    description = "Run the Slack Summarizer Agent"
+    mainClass.set("com.avci.MainKt")
+    classpath = sourceSets.main.get().runtimeClasspath
+    args = listOf("slack")
+}
+
+// Tool Testing Tasks
+tasks.register<JavaExec>("testSlackTools") {
+    group = "tools"
+    description = "Test Slack tools - list channels"
+    mainClass.set("com.avci.MainKt")
+    classpath = sourceSets.main.get().runtimeClasspath
+    args = listOf("tool:list_slack_channels")
+}
+
+tasks.register<JavaExec>("showConfig") {
+    group = "tools"
+    description = "Show current Cooker configuration"
+    mainClass.set("com.avci.MainKt")
+    classpath = sourceSets.main.get().runtimeClasspath
+    args = listOf("config")
 }
 
 tasks.register<Jar>("fatJar") {
