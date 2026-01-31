@@ -20,6 +20,9 @@ dependencies {
     // AI Agents Framework
     implementation("ai.koog:koog-agents:0.6.0")
     
+    // OpenAI Client
+    implementation("ai.koog:prompt-executor-openai-client:0.6.0")
+    
     // Date/Time utilities
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
     

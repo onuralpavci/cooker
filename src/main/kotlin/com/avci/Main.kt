@@ -151,8 +151,17 @@ suspend fun runSlackSummarizerAgent(channelId: String?, messageCount: Int = 50) 
         return
     }
     
-    val config = LLMProviderConfig.Ollama.fromEnv()
-    println("📡 LLM: ${config.model} @ ${config.baseUrl}")
+    // Auto-detect LLM provider: OpenAI if API key set, otherwise Ollama
+    val openaiKey = System.getenv("OPENAI_API_KEY")
+    val config = if (!openaiKey.isNullOrBlank()) {
+        val openaiConfig = LLMProviderConfig.OpenAI.fromEnv()
+        println("📡 LLM: OpenAI ${openaiConfig.model}")
+        openaiConfig
+    } else {
+        val ollamaConfig = LLMProviderConfig.Ollama.fromEnv()
+        println("📡 LLM: Ollama ${ollamaConfig.model} @ ${ollamaConfig.baseUrl}")
+        ollamaConfig
+    }
     
     val agent = SlackSummarizerAgent.create(config)
     

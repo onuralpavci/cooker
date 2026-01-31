@@ -1,6 +1,7 @@
 package com.avci.core.llm
 
 import ai.koog.prompt.executor.llms.all.simpleOllamaAIExecutor
+import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
 import ai.koog.prompt.executor.model.PromptExecutor
 import ai.koog.prompt.llm.LLMCapability
 import ai.koog.prompt.llm.LLMProvider
@@ -63,7 +64,6 @@ sealed class LLMProviderConfig {
     
     /**
      * OpenAI remote LLM provider
-     * TODO: Implement when needed
      */
     data class OpenAI(
         val apiKey: String = System.getenv("OPENAI_API_KEY") ?: "",
@@ -73,19 +73,19 @@ sealed class LLMProviderConfig {
     ) : LLMProviderConfig() {
         
         override fun createExecutor(): PromptExecutor {
-            // TODO: Implement OpenAI executor
-            println("🔧 [LLM] OpenAI provider not yet implemented, falling back to Ollama")
-            return simpleOllamaAIExecutor(baseUrl = "http://localhost:11434")
+            println("🔧 [LLM] Creating OpenAI executor")
+            require(apiKey.isNotBlank()) { "OPENAI_API_KEY is required" }
+            return simpleOpenAIExecutor(apiKey)
         }
         
         override fun createModel(): LLModel {
-            // TODO: Implement OpenAI model
+            println("🔧 [LLM] Creating OpenAI model: $model (context: $contextLength)")
             return LLModel(
                 provider = LLMProvider.OpenAI,
                 id = model,
                 capabilities = listOf(
                     LLMCapability.Temperature,
-                    LLMCapability.Schema.JSON.Basic,
+                    LLMCapability.Schema.JSON.Full,
                     LLMCapability.Tools
                 ),
                 contextLength = contextLength
