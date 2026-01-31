@@ -81,14 +81,33 @@ sealed class LLMProviderConfig {
         
         override fun createModel(): LLModel {
             println("🔧 [LLM] Creating OpenAI model: $model")
-            // Use predefined OpenAI models from Koog framework
-            return OpenAIModels.Chat.GPT4o
+            return modelFromString(model)
         }
         
         companion object {
+            /**
+             * Map string model names to OpenAI model objects
+             * 
+             * Supported models:
+             * - gpt-4o-mini: Cheap & fast (default) - $0.15/1M input
+             * - GPT-4o: Powerful & balanced - $2.50/1M input
+             * - GPT-4.1-nano: Ultra cheap, 1M context - $0.10/1M input
+             * - o3-mini: Reasoning model, affordable - $1.10/1M input
+             */
+            fun modelFromString(modelName: String): LLModel = when (modelName.lowercase()) {
+                "gpt-4o-mini", "4o-mini" -> OpenAIModels.Chat.GPT4oMini
+                "gpt-4o", "4o" -> OpenAIModels.Chat.GPT4o
+                "gpt-4.1-nano", "4.1-nano", "nano" -> OpenAIModels.Chat.GPT4_1Nano
+                "o3-mini" -> OpenAIModels.Chat.O3Mini
+                else -> {
+                    println("⚠️ Unknown model '$modelName', using gpt-4o-mini")
+                    OpenAIModels.Chat.GPT4oMini
+                }
+            }
+            
             fun fromEnv() = OpenAI(
                 apiKey = System.getenv("OPENAI_API_KEY") ?: "",
-                model = System.getenv("OPENAI_MODEL") ?: "gpt-4o",
+                model = System.getenv("OPENAI_MODEL") ?: "gpt-4o-mini",
                 temperature = System.getenv("OPENAI_TEMPERATURE")?.toDoubleOrNull() ?: 0.7
             )
         }
