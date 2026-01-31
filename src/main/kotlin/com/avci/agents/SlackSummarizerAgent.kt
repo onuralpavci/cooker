@@ -162,12 +162,18 @@ object SlackSummarizerAgent {
         return """
             Kanal $channelId'deki son $messageCount mesajı özetle ve özeti aynı kanala gönder.
             
-            Adımlar:
-            1. fetch_slack_messages(channelId="$channelId", limit=$messageCount) ile mesajları çek
-            2. Mesajları analiz et ve Türkçe özetle
-            3. post_slack_message(channelId="$channelId", text="özet") ile özeti gönder
+            ZORUNLU ADIMLAR (HEPSİNİ YAPMAN GEREKİYOR):
             
-            ÖNEMLİ: Özeti mutlaka aynı kanala ($channelId) gönder!
+            1. ÖNCE: fetch_slack_messages tool'unu çağır
+               fetch_slack_messages(channelId="$channelId", limit=$messageCount)
+            
+            2. SONRA: Mesajları analiz et ve Türkçe özetle
+            
+            3. EN SON: post_slack_message tool'unu MUTLAKA çağır
+               post_slack_message(channelId="$channelId", text="özet metni buraya")
+            
+            ⚠️ KRİTİK: 3. adımı ATLAMA! post_slack_message tool'unu çağırmadan bitirme!
+            Özeti sadece yazmak yetmez, Slack'e göndermen ZORUNLU.
         """.trimIndent()
     }
 }
