@@ -31,7 +31,8 @@ object FetchSlackMessages : SimpleTool<FetchSlackMessages.Args>(
     data class Args(
         val channelId: String = "",
         val limit: Int = 50,
-        val includeReplies: Boolean = false
+        val includeReplies: Boolean = false,
+        val excludeBotMessages: Boolean = true  // Filter out bot/system messages
     )
 
     @Serializable
@@ -64,8 +65,9 @@ object FetchSlackMessages : SimpleTool<FetchSlackMessages.Args>(
         
         println("   └─ Using Bot Token: ${botToken.take(15)}...")
         
-        // Call Slack API
-        val url = "$SLACK_API_BASE/conversations.history?channel=${args.channelId}&limit=${args.limit}"
+        // Call Slack API - fetch extra messages if filtering is enabled
+        val fetchLimit = if (args.excludeBotMessages) args.limit * 3 else args.limit
+        val url = "$SLACK_API_BASE/conversations.history?channel=${args.channelId}&limit=$fetchLimit"
         
         val response = HttpClient.get(
             url = url,
@@ -88,17 +90,33 @@ object FetchSlackMessages : SimpleTool<FetchSlackMessages.Args>(
                 return logAndReturn("❌ Slack API Error: $error")
             }
             
-            val messages = jsonResponse["messages"]?.jsonArray?.mapNotNull { msgElement ->
+            val allMessages = jsonResponse["messages"]?.jsonArray?.mapNotNull { msgElement ->
                 val msg = msgElement.jsonObject
                 val text = msg["text"]?.jsonPrimitive?.content ?: return@mapNotNull null
+                val isBot = msg["bot_id"] != null || msg["subtype"]?.jsonPrimitive?.content == "bot_message"
                 
                 SlackMessage(
                     user = msg["user"]?.jsonPrimitive?.content ?: "unknown",
                     text = text,
                     timestamp = msg["ts"]?.jsonPrimitive?.content ?: "",
                     threadTs = msg["thread_ts"]?.jsonPrimitive?.contentOrNull
-                )
+                ) to isBot
             } ?: emptyList()
+            
+            // Filter messages based on excludeBotMessages flag
+            val messages = if (args.excludeBotMessages) {
+                allMessages.filter { (msg, isBot) ->
+                    !isBot && 
+                    !msg.text.startsWith("/cooker") &&
+                    !msg.text.contains("Summarizing #") &&
+                    !msg.text.contains("Özet oluşturulamadı") &&
+                    !msg.text.contains("Cooker AI tarafından")
+                }.map { it.first }.take(args.limit)
+            } else {
+                allMessages.map { it.first }.take(args.limit)
+            }
+            
+            println("   └─ After filtering: ${messages.size} messages (requested: ${args.limit})")
             
             println("   └─ Fetched ${messages.size} messages")
             
