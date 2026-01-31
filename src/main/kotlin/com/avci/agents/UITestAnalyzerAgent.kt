@@ -9,7 +9,7 @@ import ai.koog.prompt.dsl.prompt
 import ai.koog.prompt.params.LLMParams
 import com.avci.core.llm.LLMProviderConfig
 import com.avci.tools.github.AnalyzeUITestFailures
-import com.avci.tools.slack.SendSlackNotification
+import com.avci.tools.slack.PostSlackMessage
 
 /**
  * AI Agent that analyzes UI test failures from GitHub Actions.
@@ -27,12 +27,13 @@ object UITestAnalyzerAgent {
         
         ## YOUR WORKFLOW:
         1. Call `analyze_ui_test_failures` tool to get test data
-        2. Call `send_slack_notification` tool with `text` and `blocks` parameters
+        2. Call `post_slack_message` tool to send the report
         3. Tell the user whether notification was sent successfully
         
-        ## send_slack_notification TOOL PARAMETERS:
-        - `text`: Fallback text (e.g., "UI Test Report - 5 failures")
-        - `blocks`: Array of Slack Block Kit blocks
+        ## post_slack_message TOOL PARAMETERS:
+        - `channelId`: Target Slack channel ID (get from environment or use default)
+        - `text`: Message text (supports mrkdwn formatting)
+        - `blocks`: Optional array of Slack Block Kit blocks for rich formatting
         
         ## SLACK BLOCK KIT BLOCKS:
         - Header: {"type": "header", "text": {"type": "plain_text", "text": "Title", "emoji": true}}
@@ -74,7 +75,7 @@ object UITestAnalyzerAgent {
         val toolRegistry = ToolRegistry {
             tool(SayToUser)
             tool(AnalyzeUITestFailures)
-            tool(SendSlackNotification)
+            tool(PostSlackMessage)
         }
 
         val agentConfig = AIAgentConfig(
