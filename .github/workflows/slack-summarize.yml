@@ -54,8 +54,7 @@ jobs:
       - name: 🦙 Start Ollama
         run: |
           echo "🚀 Starting Ollama server..."
-          # Run with no memory limit to use full host RAM
-          docker run -d --name ollama -p 11434:11434 --memory=0 ollama/ollama
+          docker run -d -p 11434:11434 --name ollama alpine/ollama
           
           # Wait for Ollama to be ready
           echo "⏳ Waiting for Ollama to start..."
@@ -68,11 +67,12 @@ jobs:
             sleep 2
           done
           
-          # Pull the model from GitHub Variables (or default)
+          # Pull the model
           MODEL="${{ vars.OLLAMA_MODEL || 'qwen2.5:7b' }}"
           echo "📥 Pulling model: $MODEL"
           docker exec ollama ollama pull $MODEL
           echo "✅ Model ready!"
+          docker exec ollama ollama list
       
       - name: 📋 Set Parameters
         id: params
