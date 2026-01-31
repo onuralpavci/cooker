@@ -72,7 +72,7 @@ jobs:
           else
             # repository_dispatch - get from client_payload
             echo "channel_id=${{ github.event.client_payload.channel_id }}" >> $GITHUB_OUTPUT
-            echo "message_count=${{ github.event.client_payload.count || '100' }}" >> $GITHUB_OUTPUT
+            echo "message_count=${{ github.event.client_payload.message_count || '100' }}" >> $GITHUB_OUTPUT
           fi
       
       - name: 🔍 Debug Parameters
