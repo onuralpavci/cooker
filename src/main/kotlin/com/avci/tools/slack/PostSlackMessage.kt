@@ -24,7 +24,21 @@ import kotlinx.serialization.json.*
 object PostSlackMessage : SimpleTool<PostSlackMessage.Args>(
     argsSerializer = Args.serializer(),
     name = "post_slack_message",
-    description = "Posts a message to a Slack channel. Can post to any channel by ID, supports threading and Block Kit formatting."
+    description = """Posts a message to a Slack channel using Block Kit formatting.
+
+Parameters:
+- channelId: The channel ID (e.g., "C0ABRLX8K1V")
+- text: Fallback text (required even when using blocks)
+- blocks: JSON array of Block Kit blocks (optional)
+- threadTs: Message timestamp to reply to (optional)
+
+Example blocks array:
+[
+  {"type":"header","text":{"type":"plain_text","text":"Title"}},
+  {"type":"section","text":{"type":"mrkdwn","text":"*Bold* and _italic_"}},
+  {"type":"divider"},
+  {"type":"context","elements":[{"type":"mrkdwn","text":"Footer text"}]}
+]"""
 ) {
 
     private const val SLACK_API_BASE = "https://slack.com/api"
