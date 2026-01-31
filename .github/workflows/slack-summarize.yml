@@ -16,7 +16,7 @@ on:
 
   # Trigger from external sources (Lambda, API, etc.)
   repository_dispatch:
-    types: [slack_summarize]
+    types: [slack-summarize]
 
 env:
   JAVA_VERSION: '21'
