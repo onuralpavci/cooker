@@ -14,6 +14,7 @@ import com.avci.tools.jira.FetchJiraTask
 import com.avci.tools.jira.SearchJiraTasks
 import com.avci.tools.playstore.FetchPlayStoreReviews
 import com.avci.tools.slack.FetchSlackMessages
+import com.avci.tools.slack.GetChannelIdByName
 import com.avci.tools.slack.GetChannelInfo
 import com.avci.tools.slack.ListSlackChannels
 import com.avci.tools.slack.PostSlackMessage
@@ -211,6 +212,13 @@ suspend fun runToolTest(command: String, args: Array<String>) {
                 return
             }
             GetChannelInfo.execute(GetChannelInfo.Args(channelId = channelId))
+        }
+        "get_channel_id" -> {
+            val channelName = args.getOrNull(1) ?: run {
+                println("❌ Usage: tool:get_channel_id <channelName>")
+                return
+            }
+            GetChannelIdByName.execute(GetChannelIdByName.Args(channelName = channelName))
         }
         "fetch_jira_task" -> {
             val taskKey = args.getOrNull(1) ?: run {
