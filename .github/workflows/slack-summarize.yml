@@ -20,7 +20,8 @@ on:
 
 env:
   JAVA_VERSION: '21'
-  OLLAMA_MODEL: 'qwen2.5:7b'  # Change this to use a different model
+  # OLLAMA_MODEL comes from repository variables (Settings → Variables → Actions)
+  # Default: qwen2.5:7b if not set
 
 jobs:
   summarize:
@@ -67,9 +68,10 @@ jobs:
             sleep 2
           done
           
-          # Pull the model
-          echo "📥 Pulling model: ${{ env.OLLAMA_MODEL }}"
-          docker exec ollama ollama pull ${{ env.OLLAMA_MODEL }}
+          # Pull the model from GitHub Variables (or default)
+          MODEL="${{ vars.OLLAMA_MODEL || 'qwen2.5:7b' }}"
+          echo "📥 Pulling model: $MODEL"
+          docker exec ollama ollama pull $MODEL
           echo "✅ Model ready!"
       
       - name: 📋 Set Parameters
@@ -90,7 +92,7 @@ jobs:
           echo "📊 Channel ID: ${{ steps.params.outputs.channel_id }}"
           echo "📊 Message Count: ${{ steps.params.outputs.message_count }}"
           echo "📊 Slack Bot Token: ${{ secrets.SLACK_BOT_TOKEN != '' && '✅ Set' || '❌ Not set' }}"
-          echo "📊 Ollama Model: ${{ env.OLLAMA_MODEL }}"
+          echo "📊 Ollama Model: ${{ vars.OLLAMA_MODEL || 'qwen2.5:7b' }}"
           echo "📊 Ollama URL: http://localhost:11434 (Docker)"
       
       - name: 📝 Run Slack Summarize Agent
@@ -100,7 +102,7 @@ jobs:
           
           # LLM Configuration (Ollama running in Docker)
           OLLAMA_URL: 'http://localhost:11434'
-          OLLAMA_MODEL: ${{ env.OLLAMA_MODEL }}
+          OLLAMA_MODEL: ${{ vars.OLLAMA_MODEL || 'qwen2.5:7b' }}
           OLLAMA_TEMPERATURE: '0.7'
         run: |
           echo "🚀 Starting Slack Summarize Agent..."
