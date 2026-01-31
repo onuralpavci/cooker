@@ -65,8 +65,8 @@ object FetchSlackMessages : SimpleTool<FetchSlackMessages.Args>(
         
         println("   └─ Using Bot Token: ${botToken.take(15)}...")
         
-        // Call Slack API - fetch extra messages if filtering is enabled
-        val fetchLimit = if (args.excludeBotMessages) args.limit * 3 else args.limit
+        // Call Slack API - fetch extra messages if filtering is enabled (10x to handle heavy bot traffic)
+        val fetchLimit = if (args.excludeBotMessages) minOf(args.limit * 10, 1000) else args.limit
         val url = "$SLACK_API_BASE/conversations.history?channel=${args.channelId}&limit=$fetchLimit"
         
         val response = HttpClient.get(
@@ -110,13 +110,21 @@ object FetchSlackMessages : SimpleTool<FetchSlackMessages.Args>(
                     !msg.text.startsWith("/cooker") &&
                     !msg.text.contains("Summarizing #") &&
                     !msg.text.contains("Özet oluşturulamadı") &&
-                    !msg.text.contains("Cooker AI tarafından")
+                    !msg.text.contains("Cooker AI tarafından") &&
+                    !msg.text.contains("Kanal Özeti") &&
+                    msg.user != "unknown"  // Filter out bot messages without user ID
                 }.map { it.first }.take(args.limit)
             } else {
                 allMessages.map { it.first }.take(args.limit)
             }
             
-            println("   └─ After filtering: ${messages.size} messages (requested: ${args.limit})")
+            println("   └─ Total fetched: ${allMessages.size}, After filtering: ${messages.size} (requested: ${args.limit})")
+            
+            if (messages.isEmpty()) {
+                println("   └─ ⚠️ No real user messages found! Channel may only contain bot messages.")
+            } else if (messages.size < args.limit) {
+                println("   └─ ⚠️ Found fewer messages than requested after filtering bot messages.")
+            }
             
             println("   └─ Fetched ${messages.size} messages")
             
