@@ -1,6 +1,7 @@
 package com.avci
 
 import com.avci.agents.BirthdayRecapAgent
+import com.avci.agents.SlackQAAgent
 import com.avci.agents.SlackSummarizerAgent
 import com.avci.agents.UITestAnalyzerAgent
 import com.avci.core.config.CookerConfig
@@ -62,6 +63,11 @@ fun main(args: Array<String>) {
                 val channelId = args.getOrNull(1)
                 val messageCount = args.getOrNull(2)?.toIntOrNull() ?: 50
                 runSlackSummarizerAgent(channelId, messageCount)
+            }
+            command.equals("slack-ask", ignoreCase = true) -> {
+                val channelId = args.getOrNull(1)
+                val question = args.drop(2).joinToString(" ")
+                runSlackAskAgent(channelId, question)
             }
             command.equals("birthday", ignoreCase = true) -> runBirthdayAgent()
             command.equals("uitest", ignoreCase = true) -> runUITestAnalyzerAgent()
@@ -172,6 +178,58 @@ suspend fun runSlackSummarizerAgent(channelId: String?, messageCount: Int = 50) 
     }
     
     println("📋 Task: ${if (channelId != null) "Summarize #$channelId ($messageCount messages)" else "Interactive mode"}")
+    println()
+    
+    val result = agent.run(userInput)
+    
+    println("\n" + "=".repeat(50))
+    println("📝 Agent Response:")
+    println("=".repeat(50))
+    println(result)
+}
+
+suspend fun runSlackAskAgent(channelId: String?, question: String?) {
+    println("❓ Slack Q&A Agent")
+    println("=".repeat(50))
+    
+    // Validate inputs
+    if (channelId.isNullOrBlank()) {
+        println("❌ Channel ID is required!")
+        println("   Usage: slack-ask <channelId> <question>")
+        return
+    }
+    
+    if (question.isNullOrBlank()) {
+        println("❌ Question is required!")
+        println("   Usage: slack-ask <channelId> <question>")
+        return
+    }
+    
+    // Check for required env
+    val botToken = System.getenv("SLACK_BOT_TOKEN")
+    if (botToken.isNullOrBlank()) {
+        println("❌ SLACK_BOT_TOKEN environment variable is required!")
+        println("   Export it: export SLACK_BOT_TOKEN='xoxb-...'")
+        return
+    }
+    
+    // Auto-detect LLM provider: OpenAI if API key set, otherwise Ollama
+    val openaiKey = System.getenv("OPENAI_API_KEY")
+    val config = if (!openaiKey.isNullOrBlank()) {
+        val openaiConfig = LLMProviderConfig.OpenAI.fromEnv()
+        println("📡 LLM: OpenAI ${openaiConfig.model}")
+        openaiConfig
+    } else {
+        val ollamaConfig = LLMProviderConfig.Ollama.fromEnv()
+        println("📡 LLM: Ollama ${ollamaConfig.model} @ ${ollamaConfig.baseUrl}")
+        ollamaConfig
+    }
+    
+    val agent = SlackQAAgent.create(config)
+    val userInput = SlackQAAgent.createAskPrompt(channelId, question)
+    
+    println("📋 Task: Answer question in #$channelId")
+    println("❓ Question: $question")
     println()
     
     val result = agent.run(userInput)
@@ -299,6 +357,7 @@ fun showHelp(unknownCommand: String?) {
         |
         |🤖 AGENTS:
         |  slack-summarize <channelId> [count]   Summarize channel & post back
+        |  slack-ask <channelId> <question>      Ask a question about channel history
         |  birthday                              Birthday PR Recap Agent
         |  uitest                                UI Test Analyzer Agent
         |
