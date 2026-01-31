@@ -6,6 +6,7 @@ import ai.koog.prompt.executor.model.PromptExecutor
 import ai.koog.prompt.llm.LLMCapability
 import ai.koog.prompt.llm.LLMProvider
 import ai.koog.prompt.llm.LLModel
+import ai.koog.prompt.llm.OpenAIModels
 
 /**
  * Abstract LLM Provider for different AI backends.
@@ -67,7 +68,7 @@ sealed class LLMProviderConfig {
      */
     data class OpenAI(
         val apiKey: String = System.getenv("OPENAI_API_KEY") ?: "",
-        override val model: String = "gpt-4-turbo",
+        override val model: String = "gpt-4o",
         override val temperature: Double = 0.7,
         override val contextLength: Long = 128000L
     ) : LLMProviderConfig() {
@@ -79,23 +80,15 @@ sealed class LLMProviderConfig {
         }
         
         override fun createModel(): LLModel {
-            println("🔧 [LLM] Creating OpenAI model: $model (context: $contextLength)")
-            return LLModel(
-                provider = LLMProvider.OpenAI,
-                id = model,
-                capabilities = listOf(
-                    LLMCapability.Temperature,
-                    LLMCapability.Schema.JSON.Basic,
-                    LLMCapability.Tools
-                ),
-                contextLength = contextLength
-            )
+            println("🔧 [LLM] Creating OpenAI model: $model")
+            // Use predefined OpenAI models from Koog framework
+            return OpenAIModels.Chat.GPT4o
         }
         
         companion object {
             fun fromEnv() = OpenAI(
                 apiKey = System.getenv("OPENAI_API_KEY") ?: "",
-                model = System.getenv("OPENAI_MODEL") ?: "gpt-4-turbo",
+                model = System.getenv("OPENAI_MODEL") ?: "gpt-4o",
                 temperature = System.getenv("OPENAI_TEMPERATURE")?.toDoubleOrNull() ?: 0.7
             )
         }
