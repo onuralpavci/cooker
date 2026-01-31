@@ -67,7 +67,7 @@ sealed class LLMProviderConfig {
      */
     data class OpenAI(
         val apiKey: String = System.getenv("OPENAI_API_KEY") ?: "",
-        override val model: String = "gpt-4o",
+        override val model: String = "gpt-4-turbo",
         override val temperature: Double = 0.7,
         override val contextLength: Long = 128000L
     ) : LLMProviderConfig() {
@@ -95,7 +95,7 @@ sealed class LLMProviderConfig {
         companion object {
             fun fromEnv() = OpenAI(
                 apiKey = System.getenv("OPENAI_API_KEY") ?: "",
-                model = System.getenv("OPENAI_MODEL") ?: "gpt-4o",
+                model = System.getenv("OPENAI_MODEL") ?: "gpt-4-turbo",
                 temperature = System.getenv("OPENAI_TEMPERATURE")?.toDoubleOrNull() ?: 0.7
             )
         }

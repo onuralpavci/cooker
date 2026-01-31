@@ -60,7 +60,7 @@ jobs:
           echo "📊 Message Count: ${{ steps.params.outputs.message_count }}"
           echo "📊 Slack Bot Token: ${{ secrets.SLACK_BOT_TOKEN != '' && '✅ Set' || '❌ Not set' }}"
           echo "📊 OpenAI API Key: ${{ secrets.OPENAI_API_KEY != '' && '✅ Set' || '❌ Not set' }}"
-          echo "📊 OpenAI Model: ${{ vars.OPENAI_MODEL || 'gpt-4o' }}"
+          echo "📊 OpenAI Model: ${{ vars.OPENAI_MODEL || 'gpt-4-turbo' }}"
       
       - name: 📝 Run Slack Summarize Agent
         env:
@@ -69,13 +69,13 @@ jobs:
           
           # LLM Configuration (OpenAI)
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-4o' }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-4-turbo' }}
           OPENAI_TEMPERATURE: '0.7'
         run: |
           echo "🚀 Starting Slack Summarize Agent..."
           echo "   Channel: ${{ steps.params.outputs.channel_id }}"
           echo "   Messages: ${{ steps.params.outputs.message_count }}"
-          echo "   LLM: OpenAI ${{ vars.OPENAI_MODEL || 'gpt-4o' }}"
+          echo "   LLM: OpenAI ${{ vars.OPENAI_MODEL || 'gpt-4-turbo' }}"
           
           ./gradlew run \
             --args="slack-summarize ${{ steps.params.outputs.channel_id }} ${{ steps.params.outputs.message_count }}" \
