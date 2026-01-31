@@ -41,10 +41,19 @@ jobs:
         with:
           cache-read-only: false
       
+      - name: 🔍 Check Available Memory
+        run: |
+          echo "📊 System Memory:"
+          free -h
+          echo ""
+          echo "📊 Available RAM for processes:"
+          cat /proc/meminfo | grep -E "MemTotal|MemFree|MemAvailable"
+      
       - name: 🦙 Start Ollama
         run: |
           echo "🚀 Starting Ollama server..."
-          docker run -d --name ollama -p 11434:11434 ollama/ollama
+          # Run with no memory limit to use full host RAM
+          docker run -d --name ollama -p 11434:11434 --memory=0 ollama/ollama
           
           # Wait for Ollama to be ready
           echo "⏳ Waiting for Ollama to start..."
@@ -57,8 +66,8 @@ jobs:
             sleep 2
           done
           
-          # Pull the model (use smaller model for GitHub Actions - limited to 8GB RAM)
-          MODEL="${{ secrets.OLLAMA_MODEL || 'llama3.2:3b' }}"
+          # Pull the model (qwen2.5:7b works well with 16GB RAM, llama3.2:3b as fallback)
+          MODEL="${{ secrets.OLLAMA_MODEL || 'qwen2.5:7b' }}"
           echo "📥 Pulling model: $MODEL"
           docker exec ollama ollama pull $MODEL
           echo "✅ Model ready!"
@@ -81,7 +90,7 @@ jobs:
           echo "📊 Channel ID: ${{ steps.params.outputs.channel_id }}"
           echo "📊 Message Count: ${{ steps.params.outputs.message_count }}"
           echo "📊 Slack Bot Token: ${{ secrets.SLACK_BOT_TOKEN != '' && '✅ Set' || '❌ Not set' }}"
-          echo "📊 Ollama Model: ${{ secrets.OLLAMA_MODEL || 'llama3.2:3b' }}"
+          echo "📊 Ollama Model: ${{ secrets.OLLAMA_MODEL || 'qwen2.5:7b' }}"
           echo "📊 Ollama URL: http://localhost:11434 (Docker)"
       
       - name: 📝 Run Slack Summarize Agent
@@ -89,9 +98,9 @@ jobs:
           # Slack Configuration
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           
-          # LLM Configuration (Ollama running in Docker - use smaller model for 8GB RAM limit)
+          # LLM Configuration (Ollama running in Docker)
           OLLAMA_URL: 'http://localhost:11434'
-          OLLAMA_MODEL: ${{ secrets.OLLAMA_MODEL || 'llama3.2:3b' }}
+          OLLAMA_MODEL: ${{ secrets.OLLAMA_MODEL || 'qwen2.5:7b' }}
           OLLAMA_TEMPERATURE: '0.7'
         run: |
           echo "🚀 Starting Slack Summarize Agent..."
