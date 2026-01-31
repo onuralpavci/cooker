@@ -68,7 +68,7 @@ sealed class LLMProviderConfig {
      */
     data class OpenAI(
         val apiKey: String = System.getenv("OPENAI_API_KEY") ?: "",
-        override val model: String = "gpt-4o",
+        override val model: String = "gpt-4o-mini",
         override val temperature: Double = 0.7,
         override val contextLength: Long = 128000L
     ) : LLMProviderConfig() {
@@ -83,27 +83,28 @@ sealed class LLMProviderConfig {
             println("🔧 [LLM] Creating OpenAI model: $model")
             return modelFromString(model)
         }
-        
-        companion object {
-            /**
-             * Map string model names to OpenAI model objects
-             * 
-             * Supported models:
-             * - gpt-4o-mini: Cheap & fast (default) - $0.15/1M input
-             * - GPT-4o: Powerful & balanced - $2.50/1M input
-             * - GPT-4.1-nano: Ultra cheap, 1M context - $0.10/1M input
-             * - o3-mini: Reasoning model, affordable - $1.10/1M input
-             */
-            fun modelFromString(modelName: String): LLModel = when (modelName.lowercase()) {
-                "gpt-4o-mini", "4o-mini" -> OpenAIModels.Chat.GPT4oMini
-                "gpt-4o", "4o" -> OpenAIModels.Chat.GPT4o
-                "gpt-4.1-nano", "4.1-nano", "nano" -> OpenAIModels.Chat.GPT4_1Nano
-                "o3-mini" -> OpenAIModels.Chat.O3Mini
-                else -> {
-                    println("⚠️ Unknown model '$modelName', using gpt-4o-mini")
-                    OpenAIModels.Chat.GPT4oMini
-                }
+
+        /**
+         * Map string model names to OpenAI model objects
+         *
+         * Supported models:
+         * - gpt-4o-mini: Cheap & fast (default) - $0.15/1M input
+         * - GPT-4o: Powerful & balanced - $2.50/1M input
+         * - GPT-4.1-nano: Ultra cheap, 1M context - $0.10/1M input
+         * - o3-mini: Reasoning model, affordable - $1.10/1M input
+         */
+        private fun modelFromString(modelName: String): LLModel = when (modelName.lowercase()) {
+            "gpt-4o-mini", "4o-mini" -> OpenAIModels.Chat.GPT4oMini
+            "gpt-4o", "4o" -> OpenAIModels.Chat.GPT4o
+            "gpt-4.1-nano", "4.1-nano", "nano" -> OpenAIModels.Chat.GPT4_1Nano
+            "o3-mini" -> OpenAIModels.Chat.O3Mini
+            else -> {
+                println("⚠️ Unknown model '$modelName', using gpt-4o-mini")
+                OpenAIModels.Chat.GPT4oMini
             }
+        }
+
+        companion object {
             
             fun fromEnv() = OpenAI(
                 apiKey = System.getenv("OPENAI_API_KEY") ?: "",
