@@ -58,8 +58,8 @@ jobs:
           done
           
           # Pull the model
-          echo "📥 Pulling model: ${{ secrets.OLLAMA_MODEL || 'llama3.2' }}"
-          docker exec ollama ollama pull ${{ secrets.OLLAMA_MODEL || 'llama3.2' }}
+          echo "📥 Pulling model: ${{ secrets.OLLAMA_MODEL || 'gpt-oss:20b' }}"
+          docker exec ollama ollama pull ${{ secrets.OLLAMA_MODEL || 'gpt-oss:20b' }}
           echo "✅ Model ready!"
       
       - name: 📋 Set Parameters
@@ -80,7 +80,7 @@ jobs:
           echo "📊 Channel ID: ${{ steps.params.outputs.channel_id }}"
           echo "📊 Message Count: ${{ steps.params.outputs.message_count }}"
           echo "📊 Slack Bot Token: ${{ secrets.SLACK_BOT_TOKEN != '' && '✅ Set' || '❌ Not set' }}"
-          echo "📊 Ollama Model: ${{ secrets.OLLAMA_MODEL || 'llama3.2' }}"
+          echo "📊 Ollama Model: ${{ secrets.OLLAMA_MODEL || 'gpt-oss:20b' }}"
           echo "📊 Ollama URL: http://localhost:11434 (Docker)"
       
       - name: 📝 Run Slack Summarize Agent
@@ -90,7 +90,7 @@ jobs:
           
           # LLM Configuration (Ollama running in Docker)
           OLLAMA_URL: 'http://localhost:11434'
-          OLLAMA_MODEL: ${{ secrets.OLLAMA_MODEL || 'llama3.2' }}
+          OLLAMA_MODEL: ${{ secrets.OLLAMA_MODEL || 'gpt-oss:20b' }}
           OLLAMA_TEMPERATURE: '0.7'
         run: |
           echo "🚀 Starting Slack Summarize Agent..."

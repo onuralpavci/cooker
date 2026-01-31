@@ -48,7 +48,7 @@ LLM-driven channel conversation analysis and summarization.
 1. **Ollama** running locally:
    ```bash
    ollama serve
-   ollama pull llama3.2
+   ollama pull gpt-oss:20b
    ```
 
 2. **GitHub CLI** authenticated:
@@ -60,7 +60,7 @@ LLM-driven channel conversation analysis and summarization.
    ```bash
    export SLACK_BOT_TOKEN="xoxb-..."
    export SLACK_WEBHOOK_URL="https://hooks.slack.com/..."
-   export OLLAMA_MODEL="llama3.2"
+   export OLLAMA_MODEL="gpt-oss:20b"
    ```
 
 ### Run Commands
@@ -161,7 +161,7 @@ Architecture:
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `OLLAMA_URL` | Ollama server URL | No (default: localhost:11434) |
-| `OLLAMA_MODEL` | LLM model name | No (default: llama3.2) |
+| `OLLAMA_MODEL` | LLM model name | No (default: gpt-oss:20b) |
 | `SLACK_BOT_TOKEN` | Slack Bot Token (xoxb-...) | For reading messages |
 | `SLACK_WEBHOOK_URL` | Slack Webhook URL | For posting messages |
 | `GITHUB_TOKEN` | GitHub PAT | For workflow triggers |

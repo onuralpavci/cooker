@@ -28,7 +28,7 @@ sealed class LLMProviderConfig {
      */
     data class Ollama(
         val baseUrl: String = "http://localhost:11434",
-        override val model: String = "llama3.2",
+        override val model: String = "gpt-oss:20b",
         override val temperature: Double = 0.7,
         override val contextLength: Long = 128000L
     ) : LLMProviderConfig() {
@@ -55,7 +55,7 @@ sealed class LLMProviderConfig {
         companion object {
             fun fromEnv() = Ollama(
                 baseUrl = System.getenv("OLLAMA_URL") ?: "http://localhost:11434",
-                model = System.getenv("OLLAMA_MODEL") ?: "llama3.2",
+                model = System.getenv("OLLAMA_MODEL") ?: "gpt-oss:20b",
                 temperature = System.getenv("OLLAMA_TEMPERATURE")?.toDoubleOrNull() ?: 0.7
             )
         }

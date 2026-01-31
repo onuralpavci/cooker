@@ -305,7 +305,7 @@ fun showHelp(unknownCommand: String?) {
         |
         |📋 ENVIRONMENT VARIABLES:
         |  OLLAMA_URL            Ollama server URL (default: http://localhost:11434)
-        |  OLLAMA_MODEL          LLM model name (default: llama3.2)
+        |  OLLAMA_MODEL          LLM model name (default: gpt-oss:20b)
         |  SLACK_BOT_TOKEN       Slack Bot Token (xoxb-...)
         |  SLACK_UI_TEST_WEBHOOK_URL  Slack webhook for notifications
         |  JIRA_BASE_URL         Jira instance URL
