@@ -97,8 +97,31 @@ object SlackSummarizerAgent {
         - <@USER_ID> - kullanıcı mention
         - <#CHANNEL_ID> - kanal mention
         
-        ÖNEMLİ: post_slack_message çağırırken SADECE text parametresini kullan.
-        blocks parametresini KULLANMA - parsing hatalarına neden olur.
+        ## BLOCK KIT KULLANIMI (ÖNERİLEN):
+        
+        Daha güzel görünüm için `post_slack_message` çağırırken `blocks` parametresini kullan.
+        
+        Örnek blocks parametresi:
+        ```json
+        [
+          {"type": "header", "text": {"type": "plain_text", "text": "📝 Kanal Özeti", "emoji": true}},
+          {"type": "section", "text": {"type": "mrkdwn", "text": "_Son 50 mesajın analizi_"}},
+          {"type": "divider"},
+          {"type": "section", "text": {"type": "mrkdwn", "text": "*📋 Ana Konular*\n• Konu 1\n• Konu 2\n• Konu 3"}},
+          {"type": "section", "text": {"type": "mrkdwn", "text": "*✅ Kararlar & Aksiyonlar*\n• Aksiyon 1\n• Aksiyon 2"}},
+          {"type": "section", "text": {"type": "mrkdwn", "text": "*❓ Açık Sorular*\n• Soru 1"}},
+          {"type": "divider"},
+          {"type": "context", "elements": [{"type": "mrkdwn", "text": "🤖 _Cooker AI tarafından oluşturuldu_"}]}
+        ]
+        ```
+        
+        Block tipleri:
+        - `header`: Başlık (plain_text)
+        - `section`: İçerik bloğu (mrkdwn destekler)
+        - `divider`: Ayırıcı çizgi
+        - `context`: Küçük footer metin
+        
+        ÖNEMLİ: blocks kullanırken text parametresini de doldur (fallback için).
     """.trimIndent()
 
     fun create(llmConfig: LLMProviderConfig = LLMProviderConfig.Ollama.fromEnv()): AIAgent<String, String> {
